@@ -7,6 +7,7 @@ use App\Http\Controllers\CollectionLotController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DetachmentController;
 use App\Http\Controllers\FactionController;
+use App\Http\Controllers\GameController;
 use App\Http\Controllers\LotPhotoController;
 use App\Http\Controllers\PointSetController;
 use App\Http\Controllers\SettingsController;
@@ -43,6 +44,10 @@ Route::middleware('auth')->group(function () {
         Route::put('{entry}', [ArmyListEntryController::class, 'update'])->name('update');
         Route::delete('{entry}', [ArmyListEntryController::class, 'destroy'])->name('destroy');
     });
+
+    Route::resource('parties', GameController::class)
+        ->names('games')
+        ->parameters(['parties' => 'game']);
 
     Route::prefix('referentiel')->group(function () {
         Route::resource('factions', FactionController::class);

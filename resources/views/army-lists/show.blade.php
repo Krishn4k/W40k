@@ -22,6 +22,7 @@
                 <button type="submit" class="btn-secondary">Dupliquer</button>
             </form>
             <a href="{{ route('army-lists.export', $armyList) }}" target="_blank" class="btn-secondary">Export texte</a>
+            <a href="{{ route('games.create', ['army_list_id' => $armyList->id]) }}" class="btn-secondary">Enregistrer une partie</a>
             <form method="POST" action="{{ route('army-lists.destroy', $armyList) }}" onsubmit="return confirm('Supprimer cette liste ?')">
                 @csrf
                 @method('DELETE')

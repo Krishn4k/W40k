@@ -31,6 +31,7 @@
                         ['Tableau de bord', 'home', ['home']],
                         ['Collection', 'collection.index', ['collection.*']],
                         ["Listes d'armée", 'army-lists.index', ['army-lists.*']],
+                        ['Parties', 'games.index', ['games.*']],
                         ['Référentiel', 'factions.index', ['factions.*', 'units.*', 'detachments.*', 'point-sets.*']],
                     ] as [$label, $routeName, $activePatterns])
                         <li>

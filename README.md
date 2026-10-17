@@ -115,6 +115,9 @@ erDiagram
     units ||--o{ army_list_entries : ""
     collection_lots |o--o{ army_list_entries : "lot affecté"
     enhancements |o--o{ army_list_entries : ""
+    users ||--o{ games : ""
+    army_lists |o--o{ games : "copie au moment de la partie"
+    factions |o--o{ games : "faction jouée / adverse"
 ```
 
 ### Référentiel partagé (sans `user_id`)
@@ -171,7 +174,16 @@ Les règles de portée faction (et faction mère) ou détachement s'appliquent a
 La portée polymorphe (`scope_type`) utilise des alias (`faction`, `detachment`, `game_format`)
 déclarés dans `AppServiceProvider`, jamais les noms de classes.
 
-**Hors périmètre pour l'instant** : options d'équipement, rattachement Leader/Bodyguard, parties (Phase 4).
+### Parties (Phase 4)
+
+| Table | Colonnes clés |
+|---|---|
+| `games` | `user_id`, `played_on`, `army_list_id` (nullable, mis à NULL si la liste est supprimée), copie de la liste : `list_name`, `faction_id`, `detachment_id`, `list_points`, `list_snapshot` (export texte) ; `opponent_name`, `opponent_faction_id`, `mission`, `result` (`win` / `draw` / `loss`), `score_for`, `score_against`, `notes` |
+
+La copie est prise quand la liste est choisie ou changée, ou sur demande (« Remplacer la copie ») :
+une liste modifiée ou supprimée plus tard ne change pas l'historique.
+
+**Hors périmètre pour l'instant** : options d'équipement, rattachement Leader/Bodyguard.
 
 ### Principes retenus
 
@@ -220,6 +232,9 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 - [x] Duplication et export texte
 
 ### Phase 4 : Parties et statistiques
+- [x] Saisie des parties (date, liste jouée, adversaire et sa faction, mission, résultat, scores, notes)
+- [x] Copie de la liste au moment de la partie (nom, faction, détachement, points, export texte)
+- [x] Statistiques : bilan global et par faction jouée, faction adverse, liste et détachement
 ### Phase 5 : Import BSData (alimentation du référentiel et des contraintes)
 - [x] Commande `bsdata:import` : téléchargement des catalogues 10e et import idempotent (identifiant `bsdata_id`)
 - [x] Factions et sous-factions (chapitres Space Marines), unités, rôles, mots-clés
@@ -276,6 +291,8 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 | 2026-10-18 | Unité rattachée à la faction du catalogue qui la définit ; bibliothèques rattachées par nom, sinon faction à part (Titans, Unaligned Forces) | Évite qu'une unité d'Aeldari finisse chez Ynnari ou les Titans chez une faction au hasard. |
 | 2026-10-18 | Données de test SM/BA retirées du seeder par défaut et supprimées par `--prune` | Remplacées par les vraies données BSData. |
 | 2026-10-18 | Mots-clés d'une unité saisis en texte (anglais, séparés par des virgules) | Plus de 1 500 mots-clés après import : des cases à cocher n'étaient plus utilisables. |
+| 2026-10-18 | Partie : copie de la liste (texte exporté, points, faction, détachement) plutôt qu'un simple lien | L'historique et les statistiques restent justes même si la liste change ou est supprimée. |
+| 2026-10-18 | Taux de victoire = victoires / parties (égalités comptées comme non-victoires) | Indicateur simple et lisible ; le détail V / E / D est affiché à côté. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
