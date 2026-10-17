@@ -25,6 +25,20 @@ enum PaintStatus: string
     }
 
     /**
+     * Tailwind background classes used by progress bars and legends.
+     */
+    public function colorClasses(): string
+    {
+        return match ($this) {
+            self::OnSprue => 'bg-zinc-300 dark:bg-zinc-700',
+            self::Assembled => 'bg-zinc-500',
+            self::Primed => 'bg-sky-600',
+            self::Painted => 'bg-amber-500',
+            self::Finished => 'bg-emerald-600',
+        };
+    }
+
+    /**
      * Position in the painting progression, from 0 (on sprue) to 4 (finished).
      */
     public function rank(): int
