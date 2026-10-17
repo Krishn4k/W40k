@@ -40,8 +40,18 @@ php artisan key:generate
 npm install
 ```
 
-> Les étapes base de données, migrations et lancement seront complétées en Phase 0
-> (étape « Base de données et .env »).
+Créer la base de données (MySQL de Laragon démarré) :
+
+```bash
+mysql -u root -e "CREATE DATABASE w40k CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+php artisan migrate
+npm run build
+```
+
+Puis dans Laragon : menu → Apache → Recharger (création du virtual host automatique),
+et ouvrir http://w40k.test
+
+En développement, lancer `npm run dev` pour le rechargement à chaud des assets.
 
 ## 3. Stack et choix techniques
 
@@ -77,8 +87,8 @@ Principes déjà retenus :
 ## 5. Feuille de route
 
 ### Phase 0 : Initialisation
-- [x] Création du projet Laravel et configuration Laragon
-- [ ] Base de données et .env
+- [ ] Création du projet Laravel et configuration Laragon
+- [x] Base de données et .env
 - [ ] Tailwind et Alpine via Vite
 - [ ] Layout principal Blade
 - [x] README initial
@@ -119,6 +129,8 @@ Principes déjà retenus :
 | 2026-10-03 | Données de référence en anglais, traduction FR en v1, interface FR | Compatibilité avec BSData (anglais) ; localisation extensible. |
 | 2026-10-03 | Jouabilité calculée par lot physique, seuil de statut réglable | Une figurine physique ne compte qu'une fois par liste. |
 | 2026-10-03 | Tests MySQL via MariaDB 10.11 dans l'environnement distant | Valider les migrations sur un moteur compatible MySQL avant chaque push. |
+| 2026-10-17 | MySQL utf8mb4_unicode_ci, fuseau UTC, locale fr (repli en) | Support complet des caractères ; dates stockées en UTC et converties à l'affichage. |
+| 2026-10-17 | `package-lock.json` versionné | Installations npm reproductibles d'une machine à l'autre. |
 
 ## 7. Problèmes connus et points en attente
 
@@ -126,5 +138,10 @@ Principes déjà retenus :
   (table de traductions dédiée ou colonnes JSON).
 - Moteur de contraintes : périmètre exact des règles couvertes à définir en Phase 1/3.
 - Proxys / kitbash : prévus dans le modèle, interface à définir.
-- « Configuration Laragon » : le projet est prêt ; l'accès via `http://w40k.test` sera vérifié
-  sur la machine Laragon lors de l'étape « Base de données et .env ».
+- « Configuration Laragon » : à vérifier sur la machine Laragon (`composer install`, migrations,
+  accès via `http://w40k.test`) avant de cocher la case correspondante.
+- Fichiers de traduction Laravel en français (messages de validation, pagination)
+  à ajouter avec la première interface (Phase 2) ; d'ici là, repli sur l'anglais.
+- `npm run build` ne peut pas être testé dans l'environnement distant : le plugin de polices
+  de `laravel-vite-plugin` télécharge « Instrument Sans » depuis fonts.bunny.net, bloqué par
+  sa politique réseau. Fonctionne normalement sur une machine avec accès Internet.
