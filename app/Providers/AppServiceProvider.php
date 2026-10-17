@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Detachment;
+use App\Models\Faction;
+use App\Models\GameFormat;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Relation::enforceMorphMap([
+            'faction' => Faction::class,
+            'detachment' => Detachment::class,
+            'game_format' => GameFormat::class,
+        ]);
     }
 }
