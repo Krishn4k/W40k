@@ -49,9 +49,13 @@ Créer les bases de données (MySQL de Laragon démarré) : `w40k` pour l'applic
 ```bash
 mysql -u root -e "CREATE DATABASE w40k CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -u root -e "CREATE DATABASE w40k_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-php artisan migrate
+php artisan migrate --seed
 npm run build
 ```
+
+> `--seed` charge les données de test : formats de jeu, une version de points, Space Marines
+> et Blood Angels, et un utilisateur `test@example.com` (mot de passe `password`).
+> Lancer les tests : `php artisan test --compact` (ils utilisent `w40k_testing`, jamais `w40k`).
 
 Puis dans Laragon : menu → Apache → Recharger (création du virtual host automatique),
 et ouvrir http://w40k.test
@@ -147,6 +151,19 @@ Statuts de peinture, dans l'ordre :
 | `painted` | Peint |
 | `finished` | Terminé (soclage, vernis) |
 
+Règles de composition saisies par les seeders (portée : format de jeu), interprétées par le moteur en Phase 3 :
+
+| `rule_type` | Paramètres | Règle |
+|---|---|---|
+| `max_points` | — | Total ≤ `points_limit` du format |
+| `max_unit_copies` | `default`, `battleline`, `dedicated_transport`, `epic_hero` | Nombre maximal d'exemplaires d'une même unité selon son rôle |
+| `max_enhancements` | `max` | Nombre maximal d'optimisations |
+| `unique_enhancements` | — | Chaque optimisation au plus une fois |
+| `requires_warlord` | — | Exactement un Seigneur de guerre, de rôle Personnage |
+
+La portée polymorphe (`scope_type`) utilise des alias (`faction`, `detachment`, `game_format`)
+déclarés dans `AppServiceProvider`, jamais les noms de classes.
+
 **Hors périmètre pour l'instant** : options d'équipement, rattachement Leader/Bodyguard, parties (Phase 4).
 
 ### Principes retenus
@@ -177,8 +194,8 @@ Statuts de peinture, dans l'ordre :
 ### Phase 1 : Conception
 - [x] Modèle de données complet, présenté sous forme de schéma avant toute migration
 - [x] Validation du schéma
-- [ ] Migrations, modèles Eloquent et relations
-- [ ] Seeders avec une faction de test
+- [x] Migrations, modèles Eloquent et relations
+- [x] Seeders avec une faction de test (Space Marines + Blood Angels)
 
 ### Phase 2 : Collection
 - [ ] CRUD factions et unités (avec traduction FR)
@@ -224,10 +241,16 @@ Statuts de peinture, dans l'ordre :
 | 2026-10-17 | Répartition par statut dans une table `lot_status_counts` | Un statut s'ajoute sans migration ; la somme est contrôlée en code. |
 | 2026-10-17 | 5 statuts de peinture : sur grappe, monté, sous-couché, peint, terminé | Granularité suffisante pour la progression ; « monté » sert de seuil de jouabilité par défaut. |
 | 2026-10-17 | Tests sur une base MySQL dédiée `w40k_testing` (au lieu de SQLite en mémoire) | Même moteur qu'en développement : JSON, clés étrangères et index uniques testés en conditions réelles. |
+| 2026-10-17 | Suppressions : cascade vers les enfants, refus pour le référentiel utilisé, lot supprimé → entrée de liste conservée sans lot | Aucune donnée personnelle perdue par erreur ; l'historique des listes reste lisible. |
+| 2026-10-17 | Statuts et rôles stockés en `string`, castés en enums PHP | Nouvelle valeur sans migration (contrairement au type `ENUM` MySQL). |
+| 2026-10-17 | Données de seed Space Marines / Blood Angels avec points plausibles, marquées « données de test » | Teste l'héritage faction → sous-faction sans prétendre reproduire le MFM. |
 
 ## 7. Problèmes connus et points en attente
 
-- Moteur de contraintes : périmètre exact des règles couvertes à définir en Phase 1/3.
+- Moteur de contraintes : 5 types de règles de base définis (section 4) ; règles de faction et de détachement
+  (ex. restrictions d'optimisations aux Personnages) à compléter en Phase 3.
+- Données de seed : points et optimisations Blood Angels indicatifs, à remplacer par les vraies valeurs
+  (saisie manuelle ou import BSData en Phase 5).
 - Proxys / kitbash : prévus dans le modèle, interface à définir.
 - Fichiers de traduction Laravel en français (messages de validation, pagination)
   à ajouter avec la première interface (Phase 2) ; d'ici là, repli sur l'anglais.
