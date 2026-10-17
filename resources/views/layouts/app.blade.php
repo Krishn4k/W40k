@@ -42,6 +42,15 @@
                                ])>{{ $label }}</a>
                         </li>
                     @endforeach
+                    @can('admin')
+                        <li>
+                            <a href="{{ route('admin.users.index') }}"
+                               @class([
+                                   'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
+                                   'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs('admin.*'),
+                               ])>Administration</a>
+                        </li>
+                    @endcan
                     <li class="flex items-center gap-3 border-t border-zinc-200 pt-2 sm:border-0 sm:pt-0 dark:border-zinc-800">
                         <a href="{{ route('settings.edit') }}" title="Paramètres" class="text-sm text-zinc-600 hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-400">{{ auth()->user()->name }}</a>
                         <form method="POST" action="{{ route('logout') }}">
@@ -58,6 +67,14 @@
         @if (session('status'))
             <div role="status" class="mb-6 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
                 {{ session('status') }}
+            </div>
+        @endif
+
+        {{-- Lien à usage unique (invitation, réinitialisation) affiché une seule fois à l'administrateur. --}}
+        @if (session('generated_link'))
+            <div x-data="{ copied: false }" class="mb-6 flex flex-wrap items-center gap-2">
+                <input type="text" readonly value="{{ session('generated_link') }}" aria-label="Lien généré" class="form-input mt-0 min-w-0 flex-1 font-mono text-xs" @focus="$el.select()">
+                <button type="button" class="btn-secondary" @click="navigator.clipboard.writeText(@js(session('generated_link'))); copied = true" x-text="copied ? 'Copié' : 'Copier'">Copier</button>
             </div>
         @endif
 

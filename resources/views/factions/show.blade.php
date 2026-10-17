@@ -18,6 +18,7 @@
                 <p class="text-sm text-zinc-500">{{ $faction->name->get('en') }}</p>
             @endif
         </div>
+        @can('admin')
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('units.create', ['faction_id' => $faction->id]) }}" class="btn-primary">Nouvelle unité</a>
             <a href="{{ route('factions.edit', $faction) }}" class="btn-secondary">Modifier</a>
@@ -27,6 +28,7 @@
                 <button type="submit" class="btn-danger">Supprimer</button>
             </form>
         </div>
+        @endcan
     </div>
 
     @if ($faction->subFactions->isNotEmpty())
@@ -50,7 +52,9 @@
     <section>
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-lg font-semibold">Détachements</h2>
-            <a href="{{ route('factions.detachments.create', $faction) }}" class="btn-secondary">Nouveau détachement</a>
+            @can('admin')
+                <a href="{{ route('factions.detachments.create', $faction) }}" class="btn-secondary">Nouveau détachement</a>
+            @endcan
         </div>
         @if ($faction->detachments->isEmpty())
             <p class="text-sm text-zinc-600 dark:text-zinc-400">
@@ -65,7 +69,9 @@
                     <li class="card">
                         <div class="flex items-start justify-between gap-2">
                             <h3 class="font-semibold">{{ $detachment->name }}</h3>
-                            <a href="{{ route('detachments.edit', $detachment) }}" class="link text-sm">Modifier</a>
+                            @can('admin')
+                                <a href="{{ route('detachments.edit', $detachment) }}" class="link text-sm">Modifier</a>
+                            @endcan
                         </div>
                         <ul class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             @foreach ($detachment->enhancements as $enhancement)

@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Validator;
 use function Laravel\Prompts\password;
 use function Laravel\Prompts\text;
 
-#[Signature('app:create-user {--name= : Nom affiché} {--email= : Adresse e-mail de connexion}')]
-#[Description('Crée un compte utilisateur (pas d\'inscription publique avant la Phase 6)')]
+#[Signature('app:create-user {--name= : Nom affiché} {--email= : Adresse e-mail de connexion} {--admin : Donne les droits d\'administration}')]
+#[Description('Crée un compte utilisateur (les joueurs peuvent aussi être invités depuis l\'administration)')]
 class CreateUser extends Command
 {
     /**
@@ -41,8 +41,9 @@ class CreateUser extends Command
         }
 
         $user = User::create($validator->validated());
+        $user->forceFill(['is_admin' => $this->option('admin')])->save();
 
-        $this->info("Compte créé : {$user->email}");
+        $this->info("Compte créé : {$user->email}".($user->is_admin ? ' (administrateur)' : ''));
 
         return self::SUCCESS;
     }

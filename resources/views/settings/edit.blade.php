@@ -34,4 +34,35 @@
             <button type="submit" class="btn-primary">Enregistrer</button>
         </div>
     </form>
+
+    <h2 class="mt-8 mb-4 text-lg font-semibold">Mot de passe</h2>
+    <form method="POST" action="{{ route('settings.password') }}" class="card flex max-w-xl flex-col gap-4">
+        @csrf
+        @method('PUT')
+
+        <div>
+            <label for="current_password" class="form-label">Mot de passe actuel</label>
+            <input id="current_password" name="current_password" type="password" required autocomplete="current-password" class="form-input">
+            @error('current_password', 'password')
+                <p class="form-error">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div>
+            <label for="password" class="form-label">Nouveau mot de passe (8 caractères minimum)</label>
+            <input id="password" name="password" type="password" required autocomplete="new-password" class="form-input">
+            @error('password', 'password')
+                <p class="form-error">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div>
+            <label for="password_confirmation" class="form-label">Confirmation</label>
+            <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" class="form-input">
+        </div>
+
+        <div>
+            <button type="submit" class="btn-secondary">Changer le mot de passe</button>
+        </div>
+    </form>
 @endsection

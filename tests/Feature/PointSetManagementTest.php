@@ -21,7 +21,7 @@ class PointSetManagementTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->admin()->create();
     }
 
     public function test_the_index_flags_the_point_set_in_force(): void

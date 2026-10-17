@@ -17,7 +17,7 @@ class DetachmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('admin');
     }
 
     /**

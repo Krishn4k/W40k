@@ -8,7 +8,9 @@
             <p class="text-sm"><a href="{{ route('factions.index') }}" class="link">Factions</a></p>
             <h1 class="text-2xl font-semibold">Unités</h1>
         </div>
+        @can('admin')
         <a href="{{ route('units.create', ['faction_id' => $selectedFactionId]) }}" class="btn-primary">Nouvelle unité</a>
+        @endcan
     </div>
 
     <form method="GET" action="{{ route('units.index') }}" class="mb-6 flex flex-wrap items-end gap-4">

@@ -19,7 +19,7 @@ class FactionManagementTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->admin()->create();
     }
 
     public function test_guests_cannot_access_the_reference_data(): void

@@ -25,7 +25,7 @@ class UnitManagementTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->admin()->create();
         $this->pointSet = PointSet::factory()->create();
     }
 

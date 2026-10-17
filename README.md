@@ -59,7 +59,8 @@ npm run build
 > `bsdata:import` télécharge les catalogues BSData (≈ 36 Mo, dans `storage/app/bsdata`, non versionné) et
 > importe factions, unités, points, détachements et optimisations (≈ 30 s). À relancer à chaque mise à jour
 > BSData ; `--offline` réutilise les fichiers déjà téléchargés.
-> Créer son propre compte : `php artisan app:create-user` (pas d'inscription publique avant la Phase 6).
+> Créer son propre compte administrateur : `php artisan app:create-user --admin`. Les joueurs suivants
+> s'inscrivent par un lien d'invitation créé dans Administration (pas d'inscription publique).
 > Lancer les tests : `php artisan test --compact` (ils utilisent `w40k_testing`, jamais `w40k`).
 
 Puis dans Laragon : menu → Apache → Recharger (création du virtual host automatique),
@@ -174,6 +175,15 @@ Les règles de portée faction (et faction mère) ou détachement s'appliquent a
 La portée polymorphe (`scope_type`) utilise des alias (`faction`, `detachment`, `game_format`)
 déclarés dans `AppServiceProvider`, jamais les noms de classes.
 
+### Comptes (Phase 6)
+
+| Table | Colonnes clés |
+|---|---|
+| `users` | + `is_admin` (booléen ; non assignable en masse) |
+| `invitations` | `token_hash` (SHA-256, unique), `created_by`, `expires_at` (+7 jours), `accepted_at`, `user_id` |
+
+La réinitialisation de mot de passe réutilise `password_reset_tokens` (lien généré par un admin, 60 minutes).
+
 ### Parties (Phase 4)
 
 | Table | Colonnes clés |
@@ -241,6 +251,10 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Points par taille d'escouade (paliers déduits des modificateurs BSData), détachements et optimisations
 - [ ] Règles de composition issues de BSData (aujourd'hui : 6 règles de base saisies à la main)
 ### Phase 6 : Authentification multi-utilisateur
+- [x] Rôle administrateur (`is_admin`), référentiel modifiable par les admins seulement, lecture pour tous
+- [x] Inscription par lien d'invitation à usage unique (7 jours), révocable
+- [x] Administration : comptes, nommer / retirer un admin (le dernier est protégé), lien de réinitialisation
+- [x] Changement de mot de passe dans les paramètres
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
 ## 6. Journal des décisions
@@ -293,6 +307,10 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Mots-clés d'une unité saisis en texte (anglais, séparés par des virgules) | Plus de 1 500 mots-clés après import : des cases à cocher n'étaient plus utilisables. |
 | 2026-10-18 | Partie : copie de la liste (texte exporté, points, faction, détachement) plutôt qu'un simple lien | L'historique et les statistiques restent justes même si la liste change ou est supprimée. |
 | 2026-10-18 | Taux de victoire = victoires / parties (égalités comptées comme non-victoires) | Indicateur simple et lisible ; le détail V / E / D est affiché à côté. |
+| 2026-10-18 | Inscription sur invitation (lien à usage unique, 7 jours, seul le hash est stocké) | Pas d'inconnus, aucun serveur mail à configurer. |
+| 2026-10-18 | Rôle admin = colonne `is_admin` + Gate `admin` ; comptes existants passés admin par la migration | Deux niveaux suffisent ; aucune dépendance ; le propriétaire garde ses droits. |
+| 2026-10-18 | Référentiel : lecture pour tous, écriture pour les admins (routes, Form Requests et boutons) | Un joueur ne peut pas modifier les points utilisés par les autres. |
+| 2026-10-18 | Mot de passe oublié : lien généré par un admin (broker Laravel), changement dans les paramètres | Aucun e-mail requis en local. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

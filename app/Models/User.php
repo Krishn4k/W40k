@@ -26,6 +26,7 @@ class User extends Authenticatable
      */
     protected $attributes = [
         'playable_min_status' => 'assembled',
+        'is_admin' => false,
     ];
 
     /**
@@ -39,6 +40,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'playable_min_status' => PaintStatus::class,
+            'is_admin' => 'boolean',
         ];
     }
 
