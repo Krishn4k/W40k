@@ -55,6 +55,7 @@ npm run build
 
 > `--seed` charge les données de test : formats de jeu, une version de points, Space Marines
 > et Blood Angels, et un utilisateur `test@example.com` (mot de passe `password`).
+> Créer son propre compte : `php artisan app:create-user` (pas d'inscription publique avant la Phase 6).
 > Lancer les tests : `php artisan test --compact` (ils utilisent `w40k_testing`, jamais `w40k`).
 
 Puis dans Laragon : menu → Apache → Recharger (création du virtual host automatique),
@@ -244,6 +245,10 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 | 2026-10-17 | Suppressions : cascade vers les enfants, refus pour le référentiel utilisé, lot supprimé → entrée de liste conservée sans lot | Aucune donnée personnelle perdue par erreur ; l'historique des listes reste lisible. |
 | 2026-10-17 | Statuts et rôles stockés en `string`, castés en enums PHP | Nouvelle valeur sans migration (contrairement au type `ENUM` MySQL). |
 | 2026-10-17 | Données de seed Space Marines / Blood Angels avec points plausibles, marquées « données de test » | Teste l'héritage faction → sous-faction sans prétendre reproduire le MFM. |
+| 2026-10-17 | Authentification faite main dès la Phase 2 : connexion/déconnexion, 5 essais max, comptes créés par `app:create-user` | Aucune dépendance (pas de starter kit) ; données déjà rattachées au bon utilisateur ; inscription publique reportée à la Phase 6. |
+| 2026-10-17 | `lang/fr` écrit à la main (validation, auth, pagination, mots de passe) ; `lang/en` non publié | Pas de dépendance ; l'anglais reste fourni par le framework. |
+| 2026-10-17 | Styles partagés (`card`, `form-input`, `btn-primary`…) déclarés en `@utility` dans `app.css` | Vues homogènes sans composants Blade ; `@utility` requis par Tailwind 4 pour `@apply`. |
+| 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
 
@@ -252,5 +257,3 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 - Données de seed : points et optimisations Blood Angels indicatifs, à remplacer par les vraies valeurs
   (saisie manuelle ou import BSData en Phase 5).
 - Proxys / kitbash : prévus dans le modèle, interface à définir.
-- Fichiers de traduction Laravel en français (messages de validation, pagination)
-  à ajouter avec la première interface (Phase 2) ; d'ici là, repli sur l'anglais.
