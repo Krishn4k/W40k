@@ -206,6 +206,7 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 - [x] Upload de photos
 - [x] Tableau de bord de progression
 - [x] Authentification (connexion, déconnexion) et paramètres (seuil de jouabilité)
+- [x] Gestion des détachements et optimisations, et des versions de points (copie des coûts)
 
 ### Phase 3 : Listes d'armée
 - [x] Création et édition de listes (format, faction, détachement)
@@ -260,6 +261,7 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 | 2026-10-18 | Jouabilité : lot affecté qui joue l'unité, avec assez de figurines au statut minimal de l'utilisateur | Montre précisément ce qu'il reste à monter ou peindre. |
 | 2026-10-18 | Changer de détachement retire les optimisations ; changer de faction est refusé si la liste contient des unités | Évite des entrées incohérentes avec le référentiel. |
 | 2026-10-18 | Duplication conservant les lots affectés ; export en texte brut (noms FR + VO entre parenthèses) | Un lot peut servir dans plusieurs listes ; texte collable partout. |
+| 2026-10-18 | Nouvelle version de points créée par copie d'une version existante (coûts d'unités et d'optimisations) | À chaque nouveau MFM, seuls les coûts modifiés sont à ressaisir. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
@@ -268,8 +270,7 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
   de faction ou de détachement (seeders uniquement). Rattachement Leader/Bodyguard non géré.
 - Données de seed : points et optimisations Blood Angels indicatifs, à remplacer par les vraies valeurs
   (saisie manuelle ou import BSData en Phase 5).
-- Gestion des versions de points (création d'une nouvelle version, copie des coûts) : pas encore d'interface ;
-  les coûts se saisissent dans la version en vigueur.
-- Détachements et optimisations : saisis par seeder uniquement, pas encore d'écran de gestion.
+- Les coûts d'unités et d'optimisations se modifient dans la version de points en vigueur uniquement ;
+  pour préparer une future version, la créer avec une date de début future puis attendre qu'elle entre en vigueur.
 - Le navigateur intégré de l'assistant ne charge pas les assets du serveur Vite (`npm run dev`, autre origine) :
   sans incidence pour l'application.

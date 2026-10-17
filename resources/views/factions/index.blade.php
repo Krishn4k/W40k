@@ -9,6 +9,7 @@
             <p class="text-sm text-zinc-600 dark:text-zinc-400">Référentiel partagé : factions, sous-factions et leurs unités.</p>
         </div>
         <div class="flex gap-2">
+            <a href="{{ route('point-sets.index') }}" class="btn-secondary">Versions des points</a>
             <a href="{{ route('units.index') }}" class="btn-secondary">Toutes les unités</a>
             <a href="{{ route('factions.create') }}" class="btn-primary">Nouvelle faction</a>
         </div>

@@ -28,31 +28,21 @@
                     :class="{ 'hidden': ! open, 'flex': open }"
                     class="hidden w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-6">
                     @foreach ([
-                        'Tableau de bord' => 'home',
-                        'Collection' => 'collection.index',
-                        "Listes d'armée" => 'army-lists.index',
-                        'Référentiel' => 'factions.index',
-                    ] as $label => $routeName)
+                        ['Tableau de bord', 'home', ['home']],
+                        ['Collection', 'collection.index', ['collection.*']],
+                        ["Listes d'armée", 'army-lists.index', ['army-lists.*']],
+                        ['Référentiel', 'factions.index', ['factions.*', 'units.*', 'detachments.*', 'point-sets.*']],
+                    ] as [$label, $routeName, $activePatterns])
                         <li>
-                            @if (Route::has($routeName))
-                                <a href="{{ route($routeName) }}"
-                                   @class([
-                                       'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
-                                       'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs(Str::before($routeName, '.').'*'),
-                                   ])>{{ $label }}</a>
-                            @else
-                                <span aria-disabled="true"
-                                      class="block cursor-not-allowed py-1 text-zinc-400 dark:text-zinc-500"
-                                      title="Bientôt disponible">{{ $label }}</span>
-                            @endif
+                            <a href="{{ route($routeName) }}"
+                               @class([
+                                   'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
+                                   'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs(...$activePatterns),
+                               ])>{{ $label }}</a>
                         </li>
                     @endforeach
                     <li class="flex items-center gap-3 border-t border-zinc-200 pt-2 sm:border-0 sm:pt-0 dark:border-zinc-800">
-                        @if (Route::has('settings.edit'))
-                            <a href="{{ route('settings.edit') }}" class="text-sm text-zinc-600 hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-400">{{ auth()->user()->name }}</a>
-                        @else
-                            <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ auth()->user()->name }}</span>
-                        @endif
+                        <a href="{{ route('settings.edit') }}" title="Paramètres" class="text-sm text-zinc-600 hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-400">{{ auth()->user()->name }}</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="text-sm text-zinc-600 hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-400">Déconnexion</button>

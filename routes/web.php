@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DetachmentController;
 use App\Http\Controllers\FactionController;
 use App\Http\Controllers\LotPhotoController;
+use App\Http\Controllers\PointSetController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +57,10 @@ Route::middleware('auth')->group(function () {
                 'destroy' => 'detachments.destroy',
             ])
             ->parameters(['detachements' => 'detachment']);
+        Route::resource('versions-points', PointSetController::class)
+            ->except('show')
+            ->names('point-sets')
+            ->parameters(['versions-points' => 'point_set']);
         Route::resource('unites', UnitController::class)
             ->except('show')
             ->names('units')

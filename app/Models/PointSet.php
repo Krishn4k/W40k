@@ -50,6 +50,16 @@ class PointSet extends Model
     }
 
     /**
+     * Army lists pinned on this point set.
+     *
+     * @return HasMany<ArmyList, $this>
+     */
+    public function armyLists(): HasMany
+    {
+        return $this->hasMany(ArmyList::class);
+    }
+
+    /**
      * Point sets valid on the given date (today by default).
      *
      * @param  Builder<PointSet>  $query

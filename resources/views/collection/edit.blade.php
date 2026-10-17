@@ -23,5 +23,5 @@
         </div>
     </form>
 
-    @includeWhen(Route::has('collection.photos.store'), 'collection._photos')
+    @include('collection._photos')
 @endsection
