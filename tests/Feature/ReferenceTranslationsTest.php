@@ -85,6 +85,17 @@ class ReferenceTranslationsTest extends TestCase
         $this->assertSame('Space Marines', $untouched->fresh()->name->get('fr'));
     }
 
+    public function test_importing_the_same_name_keeps_a_validation_made_in_the_app(): void
+    {
+        $unit = Unit::factory()->create(['bsdata_id' => 'unit-guard', 'name' => ['en' => 'Sanguinary Guard', 'fr' => 'Garde Sanguinienne']]);
+
+        File::put($this->path, "type;bsdata_id;en;fr;statut\nunit;unit-guard;Sanguinary Guard;Garde Sanguinienne;à vérifier\n");
+        $report = (new ReferenceTranslations)->import($this->path);
+
+        $this->assertSame(1, $report['unchanged']);
+        $this->assertNull($unit->fresh()->translationReview);
+    }
+
     public function test_an_export_can_be_imported_back_unchanged(): void
     {
         $unit = Unit::factory()->create(['bsdata_id' => 'unit-guard', 'name' => ['en' => 'Sanguinary Guard', 'fr' => 'Garde Sanguinienne']]);

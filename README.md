@@ -185,6 +185,10 @@ Les noms français sont dans les colonnes JSON `name` (`fr`). Le fichier version
 - `php artisan reference:import-translations [chemin]` : import (une case `fr` vide ne modifie rien) ;
 - écran Administration → Traductions : avancement par type, filtres, saisie et validation au cas par cas.
 
+Un nom identique déjà en base et marqué « à vérifier » dans le fichier ne change pas de statut : les validations
+faites dans l'appli survivent aux réimports. Pour les reporter dans le fichier versionné, relancer
+`reference:export-translations` puis commiter `database/translations/fr.csv`.
+
 La table `translation_reviews` (polymorphe, une ligne par nom « à vérifier ») porte le statut de relecture.
 
 ### Comptes (Phase 6)
@@ -270,8 +274,9 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 ### Traductions françaises du référentiel
 - [x] Export / import CSV des noms (`reference:export-translations`, `reference:import-translations`), appliqué après chaque import BSData
 - [x] Pré-remplissage à vérifier : 40 factions, 147 mots-clés courants, unités, détachements et optimisations Space Marines et Blood Angels
+- [x] Pré-remplissage à vérifier : tous les autres chapitres Space Marines (Black Templars, Dark Angels, Deathwatch, Space Wolves, Ultramarines, White Scars, Imperial Fists, Iron Hands, Raven Guard, Salamanders)
 - [x] Écran d'administration des traductions (avancement, filtres, statut « à vérifier »)
-- [ ] Relecture des traductions pré-remplies ; traduction des autres factions
+- [ ] Relecture des traductions pré-remplies ; autres factions par ordre de priorité : Necrons, Orks, Tyranides, Chaos Space Marines, Astra Militarum, puis le reste
 
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 

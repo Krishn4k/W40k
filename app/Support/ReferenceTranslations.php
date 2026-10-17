@@ -15,8 +15,8 @@ use RuntimeException;
  * French names of the imported reference data, exchanged as a CSV file (one row per BSData record).
  *
  * The file uses ";" and a UTF-8 BOM so that spreadsheets open it with its accents. An empty French
- * name leaves the database untouched, so that exporting only missing names and importing them back
- * never erases a translation.
+ * name, or the one already in the database, leaves the record untouched: importing never erases a
+ * translation nor flags again a name validated in the application.
  */
 final class ReferenceTranslations
 {
@@ -119,7 +119,8 @@ final class ReferenceTranslations
 
                     if ($record === null) {
                         $report['unknown']++;
-                    } elseif ($row['fr'] === '') {
+                    } elseif ($row['fr'] === '' || ($row['statut'] !== self::STATUS_VERIFIED && $record->name->has('fr') && $record->name->get('fr') === $row['fr'])) {
+                        // Same name still "to review" in the file: keep the database status, which may have been validated in the app.
                         $report['unchanged']++;
                     } else {
                         $this->apply($record, $row['fr'], $row['statut'] === self::STATUS_TO_REVIEW);
