@@ -67,11 +67,27 @@ class Faction extends Model
     }
 
     /**
+     * @return HasMany<ArmyList, $this>
+     */
+    public function armyLists(): HasMany
+    {
+        return $this->hasMany(ArmyList::class);
+    }
+
+    /**
      * @return MorphMany<CompositionRule, $this>
      */
     public function compositionRules(): MorphMany
     {
         return $this->morphMany(CompositionRule::class, 'scope');
+    }
+
+    /**
+     * Display name including the parent faction, e.g. "Space Marines › Blood Angels".
+     */
+    public function fullName(): string
+    {
+        return $this->parent ? $this->parent->name.' › '.$this->name : (string) $this->name;
     }
 
     /**
