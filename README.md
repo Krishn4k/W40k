@@ -81,10 +81,74 @@ En développement, lancer `npm run dev` pour le rechargement à chaud des assets
 
 ## 4. Modèle de données
 
-> À concevoir en Phase 1. Le schéma complet (tables, relations, diagramme Mermaid)
-> sera présenté et validé avant toute migration.
+Schéma validé le 2026-10-17 (Phase 1). Les migrations suivent ce schéma.
 
-Principes déjà retenus :
+```mermaid
+erDiagram
+    factions ||--o{ factions : "parent_id (sous-faction)"
+    factions ||--o{ detachments : ""
+    factions ||--o{ units : ""
+    detachments ||--o{ enhancements : ""
+    units }o--o{ keywords : "keyword_unit"
+    point_sets ||--o{ unit_point_costs : ""
+    units ||--o{ unit_point_costs : ""
+    point_sets ||--o{ enhancement_point_costs : ""
+    enhancements ||--o{ enhancement_point_costs : ""
+    game_formats ||--o{ composition_rules : "portée"
+    users ||--o{ collection_lots : ""
+    units ||--o{ collection_lots : "unit_id / counts_as_unit_id"
+    collection_lots ||--o{ lot_status_counts : ""
+    collection_lots ||--o{ lot_photos : ""
+    users ||--o{ army_lists : ""
+    army_lists ||--o{ army_list_entries : ""
+    units ||--o{ army_list_entries : ""
+    collection_lots |o--o{ army_list_entries : "lot affecté"
+    enhancements |o--o{ army_list_entries : ""
+```
+
+### Référentiel partagé (sans `user_id`)
+
+| Table | Colonnes clés |
+|---|---|
+| `factions` | `parent_id` (nullable : sous-faction), `slug`, `name` |
+| `detachments` | `faction_id`, `name` |
+| `units` | `faction_id`, `name`, `role` (Character, Battleline…), `is_epic_hero` |
+| `keywords` + `keyword_unit` | Mots-clés (Infantry, Terminator…), table pivot |
+| `point_sets` | `name` (ex. « MFM 2026 v1 »), `valid_from`, `valid_to` |
+| `unit_point_costs` | `unit_id`, `point_set_id`, `model_count`, `points` (un palier par ligne) |
+| `enhancements` | `detachment_id`, `name` |
+| `enhancement_point_costs` | `enhancement_id`, `point_set_id`, `points` |
+| `game_formats` | `name` (Incursion, Strike Force, Onslaught), `points_limit` |
+| `composition_rules` | `scope_type` + `scope_id` (format, faction, détachement), `rule_type`, `parameters` (JSON), `message` |
+
+Les colonnes `name` du référentiel sont en JSON : `{"en": "...", "fr": "..."}`.
+L'anglais est la langue de référence, et une autre langue s'ajoute sans migration.
+
+### Données personnelles (avec `user_id`)
+
+| Table | Colonnes clés |
+|---|---|
+| `users` | Colonnes Laravel + `playable_min_status` (`assembled` par défaut) |
+| `collection_lots` | `user_id`, `unit_id`, `counts_as_unit_id` (proxy, nullable), `label`, `quantity`, `notes` |
+| `lot_status_counts` | `collection_lot_id`, `status`, `count` (somme des `count` = `quantity`) |
+| `lot_photos` | `collection_lot_id`, `path`, `caption`, `position` |
+| `army_lists` | `user_id`, `name`, `faction_id`, `detachment_id`, `game_format_id`, `point_set_id` (nullable = version en vigueur) |
+| `army_list_entries` | `army_list_id`, `unit_id`, `model_count`, `collection_lot_id` (nullable, unique par liste), `enhancement_id`, `is_warlord`, `position` |
+
+Statuts de peinture, dans l'ordre :
+
+| Valeur | Libellé |
+|---|---|
+| `on_sprue` | Sur grappe |
+| `assembled` | Monté |
+| `primed` | Sous-couché |
+| `painted` | Peint |
+| `finished` | Terminé (soclage, vernis) |
+
+**Hors périmètre pour l'instant** : options d'équipement, rattachement Leader/Bodyguard, parties (Phase 4).
+
+### Principes retenus
+
 - **Référentiel partagé** (factions, sous-factions, détachements, unités, coûts en points, contraintes)
   séparé des **données personnelles** (collection, listes, parties) rattachées à un utilisateur.
 - **Hiérarchie faction → sous-faction**, la sous-faction héritant des unités de sa faction mère.
@@ -109,8 +173,8 @@ Principes déjà retenus :
 - [x] Initialisation Git et premier commit
 
 ### Phase 1 : Conception
-- [ ] Modèle de données complet, présenté sous forme de schéma avant toute migration
-- [ ] Validation du schéma
+- [x] Modèle de données complet, présenté sous forme de schéma avant toute migration
+- [x] Validation du schéma
 - [ ] Migrations, modèles Eloquent et relations
 - [ ] Seeders avec une faction de test
 
@@ -154,11 +218,12 @@ Principes déjà retenus :
 | 2026-10-17 | Police via Fontsource au lieu de Bunny Fonts | Build sans réseau et testable partout ; police servie depuis l'application. |
 | 2026-10-17 | Layout unique `layouts/app` : barre de navigation en haut, menu mobile Alpine | Navigation simple ; liens grisés « bientôt » tant que les pages n'existent pas. |
 | 2026-10-17 | Thème clair/sombre automatique (`prefers-color-scheme`, variantes `dark:` de Tailwind) | Suit le réglage du système, sans JS ni préférence à stocker. |
+| 2026-10-17 | Traductions du référentiel en colonnes JSON (`{"en", "fr"}`), cast maison | Aucune dépendance ; nouvelle langue sans migration ; anglais = clé de rapprochement avec BSData. |
+| 2026-10-17 | Répartition par statut dans une table `lot_status_counts` | Un statut s'ajoute sans migration ; la somme est contrôlée en code. |
+| 2026-10-17 | 5 statuts de peinture : sur grappe, monté, sous-couché, peint, terminé | Granularité suffisante pour la progression ; « monté » sert de seuil de jouabilité par défaut. |
 
 ## 7. Problèmes connus et points en attente
 
-- Technique de traduction des données de référence à choisir en Phase 1
-  (table de traductions dédiée ou colonnes JSON).
 - Moteur de contraintes : périmètre exact des règles couvertes à définir en Phase 1/3.
 - Proxys / kitbash : prévus dans le modèle, interface à définir.
 - Fichiers de traduction Laravel en français (messages de validation, pagination)
