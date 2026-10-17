@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ArmyListController;
+use App\Http\Controllers\ArmyListEntryController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CollectionLotController;
 use App\Http\Controllers\DashboardController;
@@ -27,6 +29,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [LotPhotoController::class, 'store'])->name('store');
         Route::get('{photo}', [LotPhotoController::class, 'show'])->name('show');
         Route::delete('{photo}', [LotPhotoController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::resource('listes', ArmyListController::class)
+        ->names('army-lists')
+        ->parameters(['listes' => 'army_list']);
+    Route::post('listes/{army_list}/dupliquer', [ArmyListController::class, 'duplicate'])->name('army-lists.duplicate');
+    Route::get('listes/{army_list}/export', [ArmyListController::class, 'export'])->name('army-lists.export');
+    Route::scopeBindings()->prefix('listes/{army_list}/unites')->name('army-lists.entries.')->group(function () {
+        Route::post('/', [ArmyListEntryController::class, 'store'])->name('store');
+        Route::put('{entry}', [ArmyListEntryController::class, 'update'])->name('update');
+        Route::delete('{entry}', [ArmyListEntryController::class, 'destroy'])->name('destroy');
     });
 
     Route::prefix('referentiel')->group(function () {

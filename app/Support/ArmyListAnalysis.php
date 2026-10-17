@@ -50,6 +50,7 @@ final class ArmyListAnalysis
             'pointSet',
             'entries.unit',
             'entries.enhancement',
+            'entries.collectionLot.unit',
             'entries.collectionLot.statusCounts',
         ]);
 

@@ -152,7 +152,8 @@ Statuts de peinture, dans l'ordre :
 | `painted` | Peint |
 | `finished` | Terminé (soclage, vernis) |
 
-Règles de composition saisies par les seeders (portée : format de jeu), interprétées par le moteur en Phase 3 :
+Règles de composition saisies par les seeders (portée : format de jeu), interprétées par `App\Support\ArmyListAnalysis`.
+Les règles de portée faction (et faction mère) ou détachement s'appliquent aussi ; un type inconnu est ignoré :
 
 | `rule_type` | Paramètres | Règle |
 |---|---|---|
@@ -160,6 +161,7 @@ Règles de composition saisies par les seeders (portée : format de jeu), interp
 | `max_unit_copies` | `default`, `battleline`, `dedicated_transport`, `epic_hero` | Nombre maximal d'exemplaires d'une même unité selon son rôle |
 | `max_enhancements` | `max` | Nombre maximal d'optimisations |
 | `unique_enhancements` | — | Chaque optimisation au plus une fois |
+| `enhancement_requires_character` | — | Optimisations réservées aux Personnages non Héros épiques |
 | `requires_warlord` | — | Exactement un Seigneur de guerre, de rôle Personnage |
 
 La portée polymorphe (`scope_type`) utilise des alias (`faction`, `detachment`, `game_format`)
@@ -206,11 +208,11 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 - [x] Authentification (connexion, déconnexion) et paramètres (seuil de jouabilité)
 
 ### Phase 3 : Listes d'armée
-- [ ] Création et édition de listes (format, faction, détachement)
-- [ ] Calcul des points
-- [ ] Validation des règles de composition (moteur générique, contraintes saisies à la main)
-- [ ] Vérification de jouabilité par rapport à la collection
-- [ ] Duplication et export texte
+- [x] Création et édition de listes (format, faction, détachement)
+- [x] Calcul des points
+- [x] Validation des règles de composition (moteur générique, contraintes saisies à la main)
+- [x] Vérification de jouabilité par rapport à la collection
+- [x] Duplication et export texte
 
 ### Phase 4 : Parties et statistiques
 ### Phase 5 : Import BSData (alimentation du référentiel et des contraintes)
@@ -254,12 +256,16 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 | 2026-10-17 | Points d'un lot estimés au coût par figurine du plus petit palier qui le contient (sinon le plus grand) | Donne une progression « en points » lisible même quand la taille du lot ne correspond à aucun palier. |
 | 2026-10-17 | Référentiel modifiable par tout utilisateur connecté | Mono-utilisateur pour l'instant ; rôle administrateur à prévoir en Phase 6. |
 | 2026-10-17 | `/` = tableau de bord ; coûts saisis dans la version de points en vigueur uniquement | Page d'accueil utile ; gestion des versions de points reportée (voir points en attente). |
+| 2026-10-18 | Règles de composition signalées, pas bloquantes ; seules les contraintes dures (unité disponible, taille d'escouade, lot) refusent la saisie | Permet de construire une liste brouillon et de voir tout ce qui ne va pas. |
+| 2026-10-18 | Jouabilité : lot affecté qui joue l'unité, avec assez de figurines au statut minimal de l'utilisateur | Montre précisément ce qu'il reste à monter ou peindre. |
+| 2026-10-18 | Changer de détachement retire les optimisations ; changer de faction est refusé si la liste contient des unités | Évite des entrées incohérentes avec le référentiel. |
+| 2026-10-18 | Duplication conservant les lots affectés ; export en texte brut (noms FR + VO entre parenthèses) | Un lot peut servir dans plusieurs listes ; texte collable partout. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
 
-- Moteur de contraintes : 5 types de règles de base définis (section 4) ; règles de faction et de détachement
-  (ex. restrictions d'optimisations aux Personnages) à compléter en Phase 3.
+- Moteur de contraintes : 6 types de règles de base ; pas encore d'écran pour saisir des règles
+  de faction ou de détachement (seeders uniquement). Rattachement Leader/Bodyguard non géré.
 - Données de seed : points et optimisations Blood Angels indicatifs, à remplacer par les vraies valeurs
   (saisie manuelle ou import BSData en Phase 5).
 - Gestion des versions de points (création d'une nouvelle version, copie des coûts) : pas encore d'interface ;

@@ -48,3 +48,8 @@
 @utility link {
     @apply text-amber-700 hover:underline dark:text-amber-400;
 }
+
+/* Éléments Alpine masqués tant que le JS n'est pas chargé. */
+[x-cloak] {
+    display: none !important;
+}
