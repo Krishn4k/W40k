@@ -35,28 +35,14 @@
     </div>
 </div>
 
-<fieldset>
-    <legend class="form-label">Mots-clés</legend>
-    @php($selectedKeywordIds = collect(old('keywords', $unit->exists ? $unit->keywords->pluck('id')->all() : []))->map(fn ($id) => (int) $id))
-    <div class="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-        @foreach ($keywords as $keyword)
-            <label class="flex items-center gap-1.5 text-sm">
-                <input type="checkbox" name="keywords[]" value="{{ $keyword->id }}" @checked($selectedKeywordIds->contains($keyword->id)) class="rounded border-zinc-300 dark:border-zinc-700">
-                {{ $keyword->name }}
-            </label>
-        @endforeach
-    </div>
-    @error('keywords.*')
+<div>
+    <label for="keywords" class="form-label">Mots-clés (en anglais, séparés par des virgules)</label>
+    <textarea id="keywords" name="keywords" rows="2" maxlength="2000" placeholder="Infantry, Grenades, Imperium" class="form-input">{{ old('keywords', $unit->exists ? $unit->keywords->map(fn ($keyword) => $keyword->name->get('en'))->sort()->join(', ') : '') }}</textarea>
+    <p class="form-help">Un mot-clé inconnu est créé ; sa traduction française pourra être ajoutée plus tard.</p>
+    @error('keywords')
         <p class="form-error">{{ $message }}</p>
     @enderror
-    <div class="mt-3">
-        <label for="new_keywords" class="form-label">Nouveaux mots-clés (en anglais, séparés par des virgules)</label>
-        <input id="new_keywords" name="new_keywords" type="text" value="{{ old('new_keywords') }}" placeholder="Grenades, Smoke" class="form-input">
-        @error('new_keywords')
-            <p class="form-error">{{ $message }}</p>
-        @enderror
-    </div>
-</fieldset>
+</div>
 
 <fieldset x-data="{ costs: @js(array_values(old('costs', $costs)) ?: [['model_count' => '', 'points' => '']]) }">
     <legend class="form-label">

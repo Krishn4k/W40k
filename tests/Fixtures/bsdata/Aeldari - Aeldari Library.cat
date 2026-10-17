@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<catalogue xmlns="http://www.battlescribe.net/schema/catalogueSchema" library="true" id="cat-aeldari-library" name="Aeldari - Aeldari Library" gameSystemId="sys-test" type="catalogue">
+  <entryLinks>
+    <entryLink import="true" name="Guardian Defenders" hidden="false" type="selectionEntry" id="link-guardians" targetId="unit-guardians"/>
+  </entryLinks>
+  <sharedSelectionEntries>
+    <selectionEntry type="unit" import="true" name="Guardian Defenders" hidden="false" id="unit-guardians">
+      <categoryLinks>
+        <categoryLink targetId="cat-battleline" id="cl-8" primary="true" name="Battleline"/>
+      </categoryLinks>
+      <selectionEntries>
+        <selectionEntry type="model" import="true" name="Guardian" hidden="false" id="model-guardian">
+          <constraints>
+            <constraint type="min" value="10" field="selections" scope="parent" shared="true" id="c-8"/>
+            <constraint type="max" value="12" field="selections" scope="parent" shared="true" id="c-9"/>
+          </constraints>
+          <costs><cost name="pts" typeId="pts-id" value="10"/></costs>
+        </selectionEntry>
+      </selectionEntries>
+    </selectionEntry>
+  </sharedSelectionEntries>
+</catalogue>

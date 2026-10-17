@@ -50,11 +50,15 @@ Créer les bases de données (MySQL de Laragon démarré) : `w40k` pour l'applic
 mysql -u root -e "CREATE DATABASE w40k CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -u root -e "CREATE DATABASE w40k_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 php artisan migrate --seed
+php artisan bsdata:import
 npm run build
 ```
 
-> `--seed` charge les données de test : formats de jeu, une version de points, Space Marines
-> et Blood Angels, et un utilisateur `test@example.com` (mot de passe `password`).
+> `--seed` charge les formats de jeu, leurs règles de composition et un utilisateur `test@example.com`
+> (mot de passe `password`).
+> `bsdata:import` télécharge les catalogues BSData (≈ 36 Mo, dans `storage/app/bsdata`, non versionné) et
+> importe factions, unités, points, détachements et optimisations (≈ 30 s). À relancer à chaque mise à jour
+> BSData ; `--offline` réutilise les fichiers déjà téléchargés.
 > Créer son propre compte : `php artisan app:create-user` (pas d'inscription publique avant la Phase 6).
 > Lancer les tests : `php artisan test --compact` (ils utilisent `w40k_testing`, jamais `w40k`).
 
@@ -217,6 +221,10 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 
 ### Phase 4 : Parties et statistiques
 ### Phase 5 : Import BSData (alimentation du référentiel et des contraintes)
+- [x] Commande `bsdata:import` : téléchargement des catalogues 10e et import idempotent (identifiant `bsdata_id`)
+- [x] Factions et sous-factions (chapitres Space Marines), unités, rôles, mots-clés
+- [x] Points par taille d'escouade (paliers déduits des modificateurs BSData), détachements et optimisations
+- [ ] Règles de composition issues de BSData (aujourd'hui : 6 règles de base saisies à la main)
 ### Phase 6 : Authentification multi-utilisateur
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
@@ -262,14 +270,24 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 | 2026-10-18 | Changer de détachement retire les optimisations ; changer de faction est refusé si la liste contient des unités | Évite des entrées incohérentes avec le référentiel. |
 | 2026-10-18 | Duplication conservant les lots affectés ; export en texte brut (noms FR + VO entre parenthèses) | Un lot peut servir dans plusieurs listes ; texte collable partout. |
 | 2026-10-18 | Nouvelle version de points créée par copie d'une version existante (coûts d'unités et d'optimisations) | À chaque nouveau MFM, seuls les coûts modifiés sont à ressaisir. |
+| 2026-10-18 | Import BSData avancé avant la Phase 4, toutes les factions, téléchargement par la commande | Référentiel complet et à jour sans saisie manuelle. |
+| 2026-10-18 | Colonne `bsdata_id` (unique, nullable) sur factions, unités, mots-clés, détachements, optimisations | Réimport sans doublon ; la saisie manuelle reste possible ; les noms FR saisis sont conservés. |
+| 2026-10-18 | Paliers de points : taille minimale + plus grande taille de chaque palier de coût égal | Reproduit les paliers officiels (5 / 10 figurines) à partir des modificateurs BSData. |
+| 2026-10-18 | Unité rattachée à la faction du catalogue qui la définit ; bibliothèques rattachées par nom, sinon faction à part (Titans, Unaligned Forces) | Évite qu'une unité d'Aeldari finisse chez Ynnari ou les Titans chez une faction au hasard. |
+| 2026-10-18 | Données de test SM/BA retirées du seeder par défaut et supprimées par `--prune` | Remplacées par les vraies données BSData. |
+| 2026-10-18 | Mots-clés d'une unité saisis en texte (anglais, séparés par des virgules) | Plus de 1 500 mots-clés après import : des cases à cocher n'étaient plus utilisables. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
 
 - Moteur de contraintes : 6 types de règles de base ; pas encore d'écran pour saisir des règles
   de faction ou de détachement (seeders uniquement). Rattachement Leader/Bodyguard non géré.
-- Données de seed : points et optimisations Blood Angels indicatifs, à remplacer par les vraies valeurs
-  (saisie manuelle ou import BSData en Phase 5).
+- Import BSData : noms en anglais uniquement (traduction FR à saisir) ; 5 unités sans coût (sous-unités
+  de Tyranides, fortifications Legends) ; 11 modificateurs de coût ignorés car liés à autre chose que le
+  nombre de figurines ; optimisations « Recon Elements » (Astra Militarum) sans détachement correspondant ;
+  factions sans unité propre (Ynnari, Adeptus Titanicus, Titanicus Traitoris) car leurs unités sont définies ailleurs.
+- Les données de test Space Marines / Blood Angels (`SpaceMarinesSeeder`, `PointSetSeeder`) ne servent plus
+  qu'aux tests automatisés ; `bsdata:import --prune` supprime celles encore présentes et inutilisées.
 - Les coûts d'unités et d'optimisations se modifient dans la version de points en vigueur uniquement ;
   pour préparer une future version, la créer avec une date de début future puis attendre qu'elle entre en vigueur.
 - Le navigateur intégré de l'assistant ne charge pas les assets du serveur Vite (`npm run dev`, autre origine) :

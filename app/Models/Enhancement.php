@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['detachment_id', 'name'])]
+#[Fillable(['bsdata_id', 'detachment_id', 'name'])]
 class Enhancement extends Model
 {
     /** @use HasFactory<EnhancementFactory> */

@@ -81,7 +81,7 @@ class UnitController extends Controller
     }
 
     /**
-     * Save the unit, its keywords (existing and new) and its costs in the current point set.
+     * Save the unit, its keywords (found by English name or created) and its costs in the current point set.
      */
     private function save(Unit $unit, UnitRequest $request): Unit
     {
@@ -90,9 +90,10 @@ class UnitController extends Controller
             'is_epic_hero' => $request->boolean('is_epic_hero'),
         ])->save();
 
-        $newKeywordIds = collect($request->newKeywordNames())
-            ->map(fn (string $name): int => $this->findOrCreateKeyword($name)->id);
-        $unit->keywords()->sync(collect($request->validated('keywords', []))->merge($newKeywordIds)->unique()->all());
+        $unit->keywords()->sync(collect($request->keywordNames())
+            ->map(fn (string $name): int => $this->findOrCreateKeyword($name)->id)
+            ->unique()
+            ->all());
 
         $pointSet = PointSet::current();
         if ($pointSet) {
@@ -124,7 +125,6 @@ class UnitController extends Controller
         return [
             'unit' => $unit,
             'factionOptions' => $this->factionOptions(),
-            'keywords' => Keyword::query()->orderBy('name->en')->get(),
             'pointSet' => $pointSet,
             'costs' => $unit->exists && $pointSet
                 ? $unit->pointCosts()->whereBelongsTo($pointSet)->orderBy('model_count')->get(['model_count', 'points'])->toArray()

@@ -43,9 +43,7 @@ class UnitRequest extends FormRequest
             'name.fr' => ['nullable', 'string', 'max:255'],
             'role' => ['required', Rule::enum(UnitRole::class)],
             'is_epic_hero' => ['boolean'],
-            'keywords' => ['array'],
-            'keywords.*' => ['integer', Rule::exists('keywords', 'id')],
-            'new_keywords' => ['nullable', 'string', 'max:500'],
+            'keywords' => ['nullable', 'string', 'max:2000'],
             'costs' => ['array'],
             'costs.*.model_count' => ['required', 'integer', 'min:1', 'max:100', 'distinct'],
             'costs.*.points' => ['required', 'integer', 'min:0', 'max:5000'],
@@ -60,18 +58,17 @@ class UnitRequest extends FormRequest
         return [
             'costs.*.model_count' => 'nombre de figurines',
             'costs.*.points' => 'points',
-            'new_keywords' => 'nouveaux mots-clés',
         ];
     }
 
     /**
-     * New keyword names (English) typed as a comma-separated list.
+     * Keyword names (English) typed as a comma-separated list, without duplicates.
      *
      * @return list<string>
      */
-    public function newKeywordNames(): array
+    public function keywordNames(): array
     {
-        return collect(explode(',', (string) $this->validated('new_keywords')))
+        return collect(explode(',', (string) $this->validated('keywords')))
             ->map(fn (string $name): string => trim($name))
             ->filter()
             ->unique(fn (string $name): string => mb_strtolower($name))

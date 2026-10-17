@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<catalogue xmlns="http://www.battlescribe.net/schema/catalogueSchema" library="false" id="cat-sm" name="Imperium - Adeptus Astartes - Space Marines" gameSystemId="sys-test" type="catalogue">
+  <entryLinks>
+    <entryLink import="true" name="Captain" hidden="false" type="selectionEntry" id="link-captain" targetId="unit-captain"/>
+    <entryLink import="true" name="Intercessor Squad" hidden="false" type="selectionEntry" id="link-intercessors" targetId="unit-intercessors"/>
+    <entryLink import="true" name="Land Speeder Storm" hidden="false" type="selectionEntry" id="link-storm" targetId="unit-storm">
+      <costs><cost name="pts" typeId="pts-id" value="70"/></costs>
+    </entryLink>
+    <entryLink import="true" name="Detachment" hidden="false" type="selectionEntry" id="link-detachment" targetId="entry-detachment"/>
+  </entryLinks>
+  <sharedSelectionEntries>
+    <selectionEntry type="model" import="true" name="Captain" hidden="false" id="unit-captain">
+      <categoryLinks>
+        <categoryLink targetId="cat-character" id="cl-1" primary="true" name="Character"/>
+        <categoryLink targetId="cat-infantry" id="cl-2" primary="false" name="Infantry"/>
+      </categoryLinks>
+      <costs><cost name="pts" typeId="pts-id" value="80"/><cost name="Crusade Points" typeId="crusade-id" value="0"/></costs>
+    </selectionEntry>
+    <selectionEntry type="unit" import="true" name="Intercessor Squad" hidden="false" id="unit-intercessors">
+      <categoryLinks>
+        <categoryLink targetId="cat-battleline" id="cl-3" primary="true" name="Battleline"/>
+        <categoryLink targetId="cat-infantry" id="cl-4" primary="false" name="Infantry"/>
+      </categoryLinks>
+      <selectionEntries>
+        <selectionEntry type="model" import="true" name="Intercessor Sergeant" hidden="false" id="model-sergeant">
+          <constraints>
+            <constraint type="min" value="1" field="selections" scope="parent" shared="true" id="c-1"/>
+            <constraint type="max" value="1" field="selections" scope="parent" shared="true" id="c-2"/>
+          </constraints>
+        </selectionEntry>
+        <selectionEntry type="model" import="true" name="Intercessor" hidden="false" id="model-intercessor">
+          <constraints>
+            <constraint type="min" value="4" field="selections" scope="parent" shared="true" id="c-3"/>
+            <constraint type="max" value="9" field="selections" scope="parent" shared="true" id="c-4"/>
+          </constraints>
+        </selectionEntry>
+      </selectionEntries>
+      <costs><cost name="pts" typeId="pts-id" value="80"/></costs>
+      <modifiers>
+        <modifier type="set" value="160" field="pts-id">
+          <conditions>
+            <condition type="atLeast" value="5" field="selections" scope="unit-intercessors" childId="model-intercessor" shared="true"/>
+          </conditions>
+        </modifier>
+        <modifier type="increment" value="10" field="pts-id">
+          <conditions>
+            <condition type="atLeast" value="1" field="selections" scope="roster" childId="some-detachment" shared="true"/>
+          </conditions>
+        </modifier>
+      </modifiers>
+    </selectionEntry>
+    <selectionEntry type="model" import="true" name="Land Speeder Storm" hidden="false" id="unit-storm">
+      <costs><cost name="pts" typeId="pts-id" value="0"/></costs>
+    </selectionEntry>
+    <selectionEntry type="upgrade" import="true" name="Detachment" hidden="false" id="entry-detachment"/>
+  </sharedSelectionEntries>
+  <sharedSelectionEntryGroups>
+    <selectionEntryGroup name="Detachment" hidden="false" id="group-detachment">
+      <selectionEntries>
+        <selectionEntry type="upgrade" import="true" name="Gladius Task Force" hidden="false" id="det-gladius"/>
+        <selectionEntry type="upgrade" import="true" name="Liberator Assault Group" hidden="false" id="det-liberator">
+          <modifiers>
+            <modifier type="set" value="true" field="hidden">
+              <conditions>
+                <condition type="notInstanceOf" value="1" field="selections" scope="primary-catalogue" childId="cat-ba" shared="true"/>
+              </conditions>
+            </modifier>
+          </modifiers>
+        </selectionEntry>
+      </selectionEntries>
+    </selectionEntryGroup>
+    <selectionEntryGroup name="Enhancements" hidden="false" id="group-enhancements">
+      <selectionEntryGroups>
+        <selectionEntryGroup name="Gladius Task Force Enhancements" hidden="false" id="enh-gladius">
+          <selectionEntries>
+            <selectionEntry type="upgrade" import="true" name="Artificer Armour" hidden="false" id="enh-artificer">
+              <costs><cost name="pts" typeId="pts-id" value="10"/></costs>
+            </selectionEntry>
+          </selectionEntries>
+        </selectionEntryGroup>
+        <selectionEntryGroup name="Liberator Assault Group Enhancements" hidden="false" id="enh-liberator">
+          <selectionEntries>
+            <selectionEntry type="upgrade" import="true" name="Gift of Foresight" hidden="false" id="enh-foresight">
+              <costs><cost name="pts" typeId="pts-id" value="15"/></costs>
+            </selectionEntry>
+          </selectionEntries>
+        </selectionEntryGroup>
+        <selectionEntryGroup name="Missing Detachment Enhancements" hidden="false" id="enh-missing">
+          <selectionEntries>
+            <selectionEntry type="upgrade" import="true" name="Orphan" hidden="false" id="enh-orphan"/>
+          </selectionEntries>
+        </selectionEntryGroup>
+      </selectionEntryGroups>
+    </selectionEntryGroup>
+  </sharedSelectionEntryGroups>
+</catalogue>

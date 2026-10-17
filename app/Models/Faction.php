@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['parent_id', 'slug', 'name'])]
+#[Fillable(['bsdata_id', 'parent_id', 'slug', 'name'])]
 class Faction extends Model
 {
     /** @use HasFactory<FactionFactory> */

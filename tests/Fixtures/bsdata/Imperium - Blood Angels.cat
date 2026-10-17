@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<catalogue xmlns="http://www.battlescribe.net/schema/catalogueSchema" library="false" id="cat-ba" name="Imperium - Adeptus Astartes - Blood Angels" gameSystemId="sys-test" type="catalogue">
+  <catalogueLinks>
+    <catalogueLink type="catalogue" name="Imperium - Space Marines" id="ln-1" targetId="cat-sm" importRootEntries="true"/>
+  </catalogueLinks>
+  <entryLinks>
+    <entryLink import="true" name="Sanguinary Guard" hidden="false" type="selectionEntry" id="link-guard" targetId="unit-guard"/>
+    <entryLink import="true" name="Commander Dante" hidden="false" type="selectionEntry" id="link-dante" targetId="unit-dante"/>
+  </entryLinks>
+  <sharedSelectionEntries>
+    <selectionEntry type="unit" import="true" name="Sanguinary Guard" hidden="false" id="unit-guard">
+      <categoryLinks>
+        <categoryLink targetId="cat-infantry" id="cl-5" primary="true" name="Infantry"/>
+      </categoryLinks>
+      <selectionEntryGroups>
+        <selectionEntryGroup name="Sanguinary Guard" hidden="false" id="group-guard">
+          <constraints>
+            <constraint type="min" value="3" field="selections" scope="parent" shared="true" id="c-5"/>
+            <constraint type="max" value="6" field="selections" scope="parent" shared="true" id="c-6"/>
+          </constraints>
+          <selectionEntries>
+            <selectionEntry type="model" import="true" name="Sanguinary Guard" hidden="false" id="model-guard">
+              <constraints>
+                <constraint type="max" value="6" field="selections" scope="parent" shared="true" id="c-7"/>
+              </constraints>
+            </selectionEntry>
+          </selectionEntries>
+        </selectionEntryGroup>
+      </selectionEntryGroups>
+      <costs><cost name="pts" typeId="pts-id" value="125"/></costs>
+      <modifiers>
+        <modifier type="set" value="260" field="pts-id">
+          <conditions>
+            <condition type="atLeast" value="4" field="selections" scope="unit-guard" childId="group-guard" shared="true"/>
+          </conditions>
+        </modifier>
+      </modifiers>
+    </selectionEntry>
+    <selectionEntry type="model" import="true" name="Commander Dante" hidden="false" id="unit-dante">
+      <categoryLinks>
+        <categoryLink targetId="cat-epic-hero" id="cl-6" primary="true" name="Epic Hero"/>
+        <categoryLink targetId="cat-character" id="cl-7" primary="false" name="Character"/>
+      </categoryLinks>
+      <costs><cost name="pts" typeId="pts-id" value="120"/></costs>
+    </selectionEntry>
+  </sharedSelectionEntries>
+</catalogue>

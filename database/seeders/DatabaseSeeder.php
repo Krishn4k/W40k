@@ -15,11 +15,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            GameFormatSeeder::class,
-            PointSetSeeder::class,
-            SpaceMarinesSeeder::class,
-        ]);
+        // Reference data comes from `php artisan bsdata:import`; SpaceMarinesSeeder and PointSetSeeder
+        // only provide a small offline data set (used by the tests).
+        $this->call(GameFormatSeeder::class);
 
         User::firstOrCreate(
             ['email' => 'test@example.com'],

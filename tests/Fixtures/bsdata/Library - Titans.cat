@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<catalogue xmlns="http://www.battlescribe.net/schema/catalogueSchema" library="true" id="cat-titans" name="Library - Titans" gameSystemId="sys-test" type="catalogue">
+  <entryLinks>
+    <entryLink import="true" name="Warlord Titan" hidden="false" type="selectionEntry" id="link-warlord" targetId="unit-warlord"/>
+  </entryLinks>
+  <sharedSelectionEntries>
+    <selectionEntry type="model" import="true" name="Warlord Titan" hidden="false" id="unit-warlord">
+      <costs><cost name="pts" typeId="pts-id" value="3500"/></costs>
+    </selectionEntry>
+  </sharedSelectionEntries>
+</catalogue>

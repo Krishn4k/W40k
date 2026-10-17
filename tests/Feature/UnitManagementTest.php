@@ -39,8 +39,7 @@ class UnitManagementTest extends TestCase
             'name' => ['en' => 'Intercessor Squad', 'fr' => 'Escouade Intercessor'],
             'role' => UnitRole::Battleline->value,
             'is_epic_hero' => '0',
-            'keywords' => [$infantry->id],
-            'new_keywords' => 'Grenades, infantry, ',
+            'keywords' => 'Infantry, Grenades, infantry, ',
             'costs' => [
                 ['model_count' => '5', 'points' => '80'],
                 ['model_count' => '10', 'points' => '160'],

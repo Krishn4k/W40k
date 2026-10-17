@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<catalogue xmlns="http://www.battlescribe.net/schema/catalogueSchema" library="false" id="cat-ynnari" name="Aeldari - Ynnari" gameSystemId="sys-test" type="catalogue">
+  <catalogueLinks>
+    <catalogueLink type="catalogue" name="Aeldari - Aeldari Library" id="ln-ynnari" targetId="cat-aeldari-library" importRootEntries="true"/>
+  </catalogueLinks>
+</catalogue>

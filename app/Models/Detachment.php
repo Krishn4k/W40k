@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['faction_id', 'name'])]
+#[Fillable(['bsdata_id', 'faction_id', 'name'])]
 class Detachment extends Model
 {
     /** @use HasFactory<DetachmentFactory> */

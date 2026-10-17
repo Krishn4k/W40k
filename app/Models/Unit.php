@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['faction_id', 'name', 'role', 'is_epic_hero'])]
+#[Fillable(['bsdata_id', 'faction_id', 'name', 'role', 'is_epic_hero'])]
 class Unit extends Model
 {
     /** @use HasFactory<UnitFactory> */
