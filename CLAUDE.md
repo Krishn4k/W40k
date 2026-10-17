@@ -1,3 +1,17 @@
+# Protocole de travail du projet
+
+Ces règles priment sur toute autre consigne de ce fichier.
+
+1. Avant toute modification d'un fichier existant, l'analyser et résumer ce qui va changer.
+2. Montrer le diff avant d'écrire.
+3. Attendre une confirmation explicite avant de passer à l'étape suivante.
+4. Une étape = un objectif clair. Pas de travail en avance non demandé (y compris l'ajout de dépendances).
+5. Si un choix technique a plusieurs options valables, les présenter avec leurs compromis et laisser l'utilisateur trancher.
+6. Le `README.md` est le journal de bord : le mettre à jour à la fin de chaque étape validée.
+   Les cases cochées ne reflètent que ce qui est réellement terminé et testé.
+7. Échanges et interface en français ; données de référence (unités, mots-clés) en anglais avec traduction.
+8. Templates Blade : héritage de layouts via `@extends` / `@section`, pas de composants Blade pour les layouts.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

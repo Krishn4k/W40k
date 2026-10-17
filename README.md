@@ -51,6 +51,15 @@ npm run build
 Puis dans Laragon : menu → Apache → Recharger (création du virtual host automatique),
 et ouvrir http://w40k.test
 
+> Au premier lancement, démarrer Laragon **en administrateur** (clic droit → Exécuter en tant
+> qu'administrateur) : il doit écrire `w40k.test` dans le fichier `hosts` de Windows. Si le site est
+> introuvable, recharger Apache dans ce mode. Si le `DocumentRoot` du fichier
+> `C:\laragon\etc\apache2\sites-enabled\auto.w40k.test.conf` ne se termine pas par `/public`,
+> supprimer ce fichier et recharger Apache.
+>
+> `http://localhost:5173` (ouvert par `npm run dev`) n'est que le serveur d'assets Vite,
+> pas l'application.
+
 En développement, lancer `npm run dev` pour le rechargement à chaud des assets.
 
 ## 3. Stack et choix techniques
@@ -62,7 +71,8 @@ En développement, lancer `npm run dev` pour le rechargement à chaud des assets
 | Base de données | MySQL | Fourni par Laragon, adapté au relationnel. |
 | Templates | Blade, layouts via `@extends` / `@section` | Rendu serveur simple, héritage de layouts explicite. Pas de composants Blade pour les layouts. |
 | CSS | Tailwind CSS 4 via Vite | Inclus par défaut dans Laravel 13, styles utilitaires sans CSS sur mesure. |
-| JS | Alpine.js | Interactivité légère (formulaires dynamiques, calcul de points en direct) sans SPA. |
+| JS | Alpine.js 3 (npm, bundlé par Vite) | Interactivité légère (formulaires dynamiques, calcul de points en direct) sans SPA. |
+| Police | Instrument Sans via Fontsource (npm) | Police auto-hébergée, build reproductible sans accès réseau, aucune requête externe à l'exécution. |
 | Assistance IA | Laravel Boost (dev) | Consignes et skills adaptées aux versions installées, serveur MCP (docs, schéma BDD) pour l'assistant de code. |
 | Environnement | Laragon | Environnement local Windows tout-en-un, virtual hosts automatiques (`w40k.test`). |
 
@@ -88,9 +98,9 @@ Principes déjà retenus :
 ## 5. Feuille de route
 
 ### Phase 0 : Initialisation
-- [ ] Création du projet Laravel et configuration Laragon
+- [x] Création du projet Laravel et configuration Laragon
 - [x] Base de données et .env
-- [ ] Tailwind et Alpine via Vite
+- [x] Tailwind et Alpine via Vite
 - [ ] Layout principal Blade
 - [x] README initial
 - [x] Initialisation Git et premier commit
@@ -134,6 +144,9 @@ Principes déjà retenus :
 | 2026-10-17 | `package-lock.json` versionné | Installations npm reproductibles d'une machine à l'autre. |
 | 2026-10-17 | Laravel Boost installé (dev), agent Claude Code, sans Laravel Cloud | Suivre les conventions Laravel à jour ; projet local sous Laragon, pas de déploiement Cloud. |
 | 2026-10-17 | `AGENTS.md` supprimé, `boost:update` lancé après chaque `composer update` | Seul Claude Code est utilisé ; consignes Boost toujours synchronisées avec les dépendances. |
+| 2026-10-17 | Protocole de travail ajouté en tête de `CLAUDE.md` | Appliqué automatiquement par les futures sessions de l'assistant ; préservé par `boost:update`. |
+| 2026-10-17 | Alpine.js installé via npm et bundlé par Vite (pas de CDN) | Version figée dans `package-lock.json`, un seul bundle JS, fonctionne hors ligne. |
+| 2026-10-17 | Police via Fontsource au lieu de Bunny Fonts | Build sans réseau et testable partout ; police servie depuis l'application. |
 
 ## 7. Problèmes connus et points en attente
 
@@ -141,10 +154,7 @@ Principes déjà retenus :
   (table de traductions dédiée ou colonnes JSON).
 - Moteur de contraintes : périmètre exact des règles couvertes à définir en Phase 1/3.
 - Proxys / kitbash : prévus dans le modèle, interface à définir.
-- « Configuration Laragon » : à vérifier sur la machine Laragon (`composer install`, migrations,
-  accès via `http://w40k.test`) avant de cocher la case correspondante.
 - Fichiers de traduction Laravel en français (messages de validation, pagination)
   à ajouter avec la première interface (Phase 2) ; d'ici là, repli sur l'anglais.
-- `npm run build` ne peut pas être testé dans l'environnement distant : le plugin de polices
-  de `laravel-vite-plugin` télécharge « Instrument Sans » depuis fonts.bunny.net, bloqué par
-  sa politique réseau. Fonctionne normalement sur une machine avec accès Internet.
+- Fonctionnement d'Alpine dans le navigateur à vérifier avec le layout principal (aucune page
+  ne charge encore `@vite`).
