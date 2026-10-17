@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTranslationReview;
 use App\Support\LocalizedText;
 use Database\Factories\FactionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Faction extends Model
 {
     /** @use HasFactory<FactionFactory> */
-    use HasFactory;
+    use HasFactory, HasTranslationReview;
 
     /**
      * Get the attributes that should be cast.

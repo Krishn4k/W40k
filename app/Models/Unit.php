@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UnitRole;
+use App\Models\Concerns\HasTranslationReview;
 use App\Support\LocalizedText;
 use Database\Factories\UnitFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Unit extends Model
 {
     /** @use HasFactory<UnitFactory> */
-    use HasFactory;
+    use HasFactory, HasTranslationReview;
 
     /**
      * Get the attributes that should be cast.

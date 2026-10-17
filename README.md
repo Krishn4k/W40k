@@ -58,7 +58,8 @@ npm run build
 > (mot de passe `password`).
 > `bsdata:import` télécharge les catalogues BSData (≈ 36 Mo, dans `storage/app/bsdata`, non versionné) et
 > importe factions, unités, points, détachements et optimisations (≈ 30 s). À relancer à chaque mise à jour
-> BSData ; `--offline` réutilise les fichiers déjà téléchargés.
+> BSData ; `--offline` réutilise les fichiers déjà téléchargés. Il applique ensuite les noms français de
+> `database/translations/fr.csv` (voir « Traductions » ci-dessous).
 > Créer son propre compte administrateur : `php artisan app:create-user --admin`. Les joueurs suivants
 > s'inscrivent par un lien d'invitation créé dans Administration (pas d'inscription publique).
 > Lancer les tests : `php artisan test --compact` (ils utilisent `w40k_testing`, jamais `w40k`).
@@ -175,6 +176,17 @@ Les règles de portée faction (et faction mère) ou détachement s'appliquent a
 La portée polymorphe (`scope_type`) utilise des alias (`faction`, `detachment`, `game_format`)
 déclarés dans `AppServiceProvider`, jamais les noms de classes.
 
+### Traductions du référentiel
+
+Les noms français sont dans les colonnes JSON `name` (`fr`). Le fichier versionné `database/translations/fr.csv`
+(`;`, UTF-8 avec BOM, colonnes `type;bsdata_id;en;fr;statut`) les transporte d'une installation à l'autre :
+
+- `php artisan reference:export-translations [chemin] [--missing]` : export (tout, ou seulement les noms non traduits) ;
+- `php artisan reference:import-translations [chemin]` : import (une case `fr` vide ne modifie rien) ;
+- écran Administration → Traductions : avancement par type, filtres, saisie et validation au cas par cas.
+
+La table `translation_reviews` (polymorphe, une ligne par nom « à vérifier ») porte le statut de relecture.
+
 ### Comptes (Phase 6)
 
 | Table | Colonnes clés |
@@ -255,6 +267,12 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Inscription par lien d'invitation à usage unique (7 jours), révocable
 - [x] Administration : comptes, nommer / retirer un admin (le dernier est protégé), lien de réinitialisation
 - [x] Changement de mot de passe dans les paramètres
+### Traductions françaises du référentiel
+- [x] Export / import CSV des noms (`reference:export-translations`, `reference:import-translations`), appliqué après chaque import BSData
+- [x] Pré-remplissage à vérifier : 40 factions, 147 mots-clés courants, unités, détachements et optimisations Space Marines et Blood Angels
+- [x] Écran d'administration des traductions (avancement, filtres, statut « à vérifier »)
+- [ ] Relecture des traductions pré-remplies ; traduction des autres factions
+
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
 ## 6. Journal des décisions
@@ -311,6 +329,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Rôle admin = colonne `is_admin` + Gate `admin` ; comptes existants passés admin par la migration | Deux niveaux suffisent ; aucune dépendance ; le propriétaire garde ses droits. |
 | 2026-10-18 | Référentiel : lecture pour tous, écriture pour les admins (routes, Form Requests et boutons) | Un joueur ne peut pas modifier les points utilisés par les autres. |
 | 2026-10-18 | Mot de passe oublié : lien généré par un admin (broker Laravel), changement dans les paramètres | Aucun e-mail requis en local. |
+| 2026-10-18 | Traductions : fichier CSV versionné + écran d'administration + pré-remplissage par l'assistant marqué « à vérifier » | Travail en masse au tableur, conservé entre installations et réimports ; corrections ponctuelles dans l'appli. |
+| 2026-10-18 | Statut « à vérifier » dans une table polymorphe `translation_reviews` | Aucune modification des tables existantes ; ne stocke que les exceptions. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

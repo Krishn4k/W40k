@@ -3,6 +3,7 @@
 @section('title', 'Utilisateurs')
 
 @section('content')
+    @include('admin._nav')
     @include('partials.errors', ['keys' => ['user']])
 
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">

@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Detachment;
+use App\Models\Enhancement;
 use App\Models\Faction;
 use App\Models\GameFormat;
+use App\Models\Keyword;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
@@ -34,6 +37,9 @@ class AppServiceProvider extends ServiceProvider
             'faction' => Faction::class,
             'detachment' => Detachment::class,
             'game_format' => GameFormat::class,
+            'unit' => Unit::class,
+            'keyword' => Keyword::class,
+            'enhancement' => Enhancement::class,
         ]);
     }
 }

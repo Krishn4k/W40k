@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Support\BsData\BsDataDownloader;
 use App\Support\BsData\BsDataImporter;
 use App\Support\BsData\BsDataLibrary;
+use App\Support\ReferenceTranslations;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -12,14 +13,15 @@ use Throwable;
 
 #[Signature('bsdata:import
     {--offline : Utilise les fichiers déjà téléchargés au lieu de les télécharger}
-    {--prune : Supprime les données de référence de test inutilisées (hors BSData)}')]
+    {--prune : Supprime les données de référence de test inutilisées (hors BSData)}
+    {--without-translations : N\'applique pas le fichier de traductions françaises après l\'import}')]
 #[Description('Télécharge les catalogues BSData et importe factions, unités, points, détachements et optimisations')]
 class ImportBsData extends Command
 {
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(ReferenceTranslations $translations): int
     {
         $directory = config('bsdata.directory');
 
@@ -66,6 +68,11 @@ class ImportBsData extends Command
         }
 
         $this->info("Points enregistrés dans la version « {$result['pointSet']->name} ».");
+
+        if (! $this->option('without-translations') && is_file(ReferenceTranslations::defaultPath())) {
+            $report = $translations->import(ReferenceTranslations::defaultPath());
+            $this->info("Traductions françaises : {$report['updated']} appliquée(s).");
+        }
 
         return self::SUCCESS;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTranslationReview;
 use App\Support\LocalizedText;
 use Database\Factories\KeywordFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Keyword extends Model
 {
     /** @use HasFactory<KeywordFactory> */
-    use HasFactory;
+    use HasFactory, HasTranslationReview;
 
     /**
      * Get the attributes that should be cast.
