@@ -99,6 +99,10 @@ class BsDataImportTest extends TestCase
         $this->assertTrue($foresight->detachment->is($liberator));
         $this->assertSame(15, $foresight->pointCosts()->whereBelongsTo($result['pointSet'])->sole()->points);
         $this->assertDatabaseMissing('enhancements', ['bsdata_id' => 'enh-orphan']);
+
+        $flat = Enhancement::query()->where('bsdata_id', 'enh-flat-veil')->sole();
+        $this->assertTrue($flat->detachment->is($gladius), 'A flat enhancement goes to the detachment its visibility depends on.');
+        $this->assertSame(20, $flat->pointCosts()->whereBelongsTo($result['pointSet'])->sole()->points);
         $this->assertStringContainsString('Missing Detachment Enhancements', implode("\n", $result['warnings']));
     }
 

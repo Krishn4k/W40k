@@ -154,6 +154,18 @@ final class BsDataCatalogue
     }
 
     /**
+     * Enhancements listed directly in an "Enhancements" group, without per-detachment sub-group.
+     *
+     * @return list<DOMElement>
+     */
+    public function flatEnhancementEntries(): array
+    {
+        return iterator_to_array($this->xpath->query(
+            '//b:selectionEntryGroup[@name="Enhancements"]/b:selectionEntries/b:selectionEntry[@type="upgrade"]',
+        ), false);
+    }
+
+    /**
      * Identifier of the "pts" cost type (defined in the game system).
      */
     public function pointsCostTypeId(): ?string

@@ -27,7 +27,7 @@ class ImportReferenceTranslations extends Command
             return self::FAILURE;
         }
 
-        $this->info("{$report['updated']} traduction(s) appliquée(s), {$report['unchanged']} ligne(s) sans traduction, {$report['unknown']} ligne(s) inconnue(s).");
+        $this->info("{$report['updated']} traduction(s) appliquée(s), {$report['unchanged']} ligne(s) inchangée(s) ou vide(s), {$report['unknown']} ligne(s) inconnue(s).");
 
         return self::SUCCESS;
     }

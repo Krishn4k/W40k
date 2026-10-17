@@ -315,10 +315,12 @@ final class BsDataImporter
         return $condition instanceof DOMElement ? ($this->factions[$condition->getAttribute('childId')] ?? null) : null;
     }
 
+    /**
+     * Enhancements come either in one sub-group per detachment ("Gladius Task Force Enhancements"), or as a
+     * flat list where each one is hidden unless its detachment is selected (Necrons).
+     */
     private function importEnhancements(BsDataCatalogue $catalogue): void
     {
-        $pointsTypeId = $this->library->gameSystem()->pointsCostTypeId();
-
         foreach ($catalogue->enhancementGroups() as $group) {
             $detachmentName = trim(preg_replace('/\s*Enhancements$/i', '', $group->getAttribute('name')));
             $detachment = $this->detachmentsByCatalogue[$catalogue->id][$detachmentName] ?? null;
@@ -330,22 +332,45 @@ final class BsDataImporter
             }
 
             foreach ($catalogue->xpath->query('.//b:selectionEntry[@type="upgrade"]', $group) as $entry) {
-                $cost = $catalogue->xpath->query("b:costs/b:cost[@typeId='{$pointsTypeId}']", $entry)->item(0);
-
-                $enhancement = Enhancement::query()->firstOrNew(['bsdata_id' => $entry->getAttribute('id')]);
-                $enhancement->fill([
-                    'detachment_id' => $detachment->id,
-                    'name' => $this->englishName($enhancement, $entry->getAttribute('name')),
-                ])->save();
-
-                $enhancement->pointCosts()->updateOrCreate(
-                    ['point_set_id' => $this->pointSet->id],
-                    ['points' => $cost instanceof DOMElement ? (int) round((float) $cost->getAttribute('value')) : 0],
-                );
-
-                $this->count('enhancements');
+                $this->importEnhancement($entry, $catalogue, $detachment);
             }
         }
+
+        $detachmentsByBsDataId = collect($this->detachmentsByCatalogue)->flatten()->keyBy('bsdata_id');
+
+        foreach ($catalogue->flatEnhancementEntries() as $entry) {
+            $detachment = collect($catalogue->xpath->query(".//b:modifier[@field='hidden']//b:condition/@childId", $entry))
+                ->map(fn ($attribute): ?Detachment => $detachmentsByBsDataId->get($attribute->value))
+                ->filter()
+                ->first();
+
+            if ($detachment === null) {
+                $this->warn("Optimisation « {$entry->getAttribute('name')} » sans détachement identifiable dans {$catalogue->name}.");
+
+                continue;
+            }
+
+            $this->importEnhancement($entry, $catalogue, $detachment);
+        }
+    }
+
+    private function importEnhancement(DOMElement $entry, BsDataCatalogue $catalogue, Detachment $detachment): void
+    {
+        $pointsTypeId = $this->library->gameSystem()->pointsCostTypeId();
+        $cost = $catalogue->xpath->query("b:costs/b:cost[@typeId='{$pointsTypeId}']", $entry)->item(0);
+
+        $enhancement = Enhancement::query()->firstOrNew(['bsdata_id' => $entry->getAttribute('id')]);
+        $enhancement->fill([
+            'detachment_id' => $detachment->id,
+            'name' => $this->englishName($enhancement, $entry->getAttribute('name')),
+        ])->save();
+
+        $enhancement->pointCosts()->updateOrCreate(
+            ['point_set_id' => $this->pointSet->id],
+            ['points' => $cost instanceof DOMElement ? (int) round((float) $cost->getAttribute('value')) : 0],
+        );
+
+        $this->count('enhancements');
     }
 
     /**

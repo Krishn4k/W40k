@@ -70,6 +70,18 @@
       </selectionEntries>
     </selectionEntryGroup>
     <selectionEntryGroup name="Enhancements" hidden="false" id="group-enhancements">
+      <selectionEntries>
+        <selectionEntry type="upgrade" import="true" name="Veil of Darkness" hidden="false" id="enh-flat-veil">
+          <modifiers>
+            <modifier type="set" value="true" field="hidden">
+              <conditions>
+                <condition type="lessThan" value="1" field="selections" scope="force" childId="det-gladius" shared="true"/>
+              </conditions>
+            </modifier>
+          </modifiers>
+          <costs><cost name="pts" typeId="pts-id" value="20"/></costs>
+        </selectionEntry>
+      </selectionEntries>
       <selectionEntryGroups>
         <selectionEntryGroup name="Gladius Task Force Enhancements" hidden="false" id="enh-gladius">
           <selectionEntries>

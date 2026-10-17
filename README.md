@@ -265,6 +265,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Commande `bsdata:import` : téléchargement des catalogues 10e et import idempotent (identifiant `bsdata_id`)
 - [x] Factions et sous-factions (chapitres Space Marines), unités, rôles, mots-clés
 - [x] Points par taille d'escouade (paliers déduits des modificateurs BSData), détachements et optimisations
+  (groupées par détachement, ou en liste à plat conditionnée par le détachement comme chez les Necrons)
 - [ ] Règles de composition issues de BSData (aujourd'hui : 6 règles de base saisies à la main)
 ### Phase 6 : Authentification multi-utilisateur
 - [x] Rôle administrateur (`is_admin`), référentiel modifiable par les admins seulement, lecture pour tous
@@ -276,7 +277,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Pré-remplissage à vérifier : 40 factions, 147 mots-clés courants, unités, détachements et optimisations Space Marines et Blood Angels
 - [x] Pré-remplissage à vérifier : tous les autres chapitres Space Marines (Black Templars, Dark Angels, Deathwatch, Space Wolves, Ultramarines, White Scars, Imperial Fists, Iron Hands, Raven Guard, Salamanders)
 - [x] Écran d'administration des traductions (avancement, filtres, statut « à vérifier »)
-- [ ] Relecture des traductions pré-remplies ; autres factions par ordre de priorité : Necrons, Orks, Tyranides, Chaos Space Marines, Astra Militarum, puis le reste
+- [x] Pré-remplissage à vérifier : Necrons, Orks, Tyranides (unités, détachements, optimisations)
+- [ ] Relecture des traductions pré-remplies ; autres factions par ordre de priorité : Chaos Space Marines, Astra Militarum, Aeldari, T'au, puis le reste
 
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
