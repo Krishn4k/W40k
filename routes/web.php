@@ -5,6 +5,7 @@ use App\Http\Controllers\ArmyListEntryController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CollectionLotController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DetachmentController;
 use App\Http\Controllers\FactionController;
 use App\Http\Controllers\LotPhotoController;
 use App\Http\Controllers\SettingsController;
@@ -44,6 +45,17 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('referentiel')->group(function () {
         Route::resource('factions', FactionController::class);
+        Route::resource('factions.detachements', DetachmentController::class)
+            ->shallow()
+            ->only(['create', 'store', 'edit', 'update', 'destroy'])
+            ->names([
+                'create' => 'factions.detachments.create',
+                'store' => 'factions.detachments.store',
+                'edit' => 'detachments.edit',
+                'update' => 'detachments.update',
+                'destroy' => 'detachments.destroy',
+            ])
+            ->parameters(['detachements' => 'detachment']);
         Route::resource('unites', UnitController::class)
             ->except('show')
             ->names('units')

@@ -43,4 +43,12 @@ class Enhancement extends Model
     {
         return $this->hasMany(EnhancementPointCost::class);
     }
+
+    /**
+     * @return HasMany<ArmyListEntry, $this>
+     */
+    public function armyListEntries(): HasMany
+    {
+        return $this->hasMany(ArmyListEntry::class);
+    }
 }

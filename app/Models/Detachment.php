@@ -46,6 +46,14 @@ class Detachment extends Model
     }
 
     /**
+     * @return HasMany<ArmyList, $this>
+     */
+    public function armyLists(): HasMany
+    {
+        return $this->hasMany(ArmyList::class);
+    }
+
+    /**
      * @return MorphMany<CompositionRule, $this>
      */
     public function compositionRules(): MorphMany

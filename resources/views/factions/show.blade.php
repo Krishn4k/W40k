@@ -48,7 +48,10 @@
     </section>
 
     <section>
-        <h2 class="mb-3 text-lg font-semibold">Détachements</h2>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Détachements</h2>
+            <a href="{{ route('factions.detachments.create', $faction) }}" class="btn-secondary">Nouveau détachement</a>
+        </div>
         @if ($faction->detachments->isEmpty())
             <p class="text-sm text-zinc-600 dark:text-zinc-400">
                 Aucun détachement propre à cette faction.
@@ -60,7 +63,10 @@
             <ul class="grid gap-4 sm:grid-cols-2">
                 @foreach ($faction->detachments as $detachment)
                     <li class="card">
-                        <h3 class="font-semibold">{{ $detachment->name }}</h3>
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="font-semibold">{{ $detachment->name }}</h3>
+                            <a href="{{ route('detachments.edit', $detachment) }}" class="link text-sm">Modifier</a>
+                        </div>
                         <ul class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                             @foreach ($detachment->enhancements as $enhancement)
                                 <li>{{ $enhancement->name }}</li>
