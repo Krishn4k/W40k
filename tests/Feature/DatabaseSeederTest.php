@@ -48,7 +48,7 @@ class DatabaseSeederTest extends TestCase
 
         $this->assertSame(2, Faction::count());
         $this->assertSame(3, GameFormat::count());
-        $this->assertSame(15, CompositionRule::count());
+        $this->assertSame(18, CompositionRule::count());
         $this->assertSame(1, User::count());
     }
 }

@@ -25,11 +25,11 @@ class GameFormatSeeder extends Seeder
             $format = GameFormat::query()->where('points_limit', $attributes['points_limit'])->first()
                 ?? GameFormat::create($attributes);
 
-            if ($format->compositionRules()->exists()) {
-                continue;
+            foreach ($this->coreRules() as $rule) {
+                if (! $format->compositionRules()->where('rule_type', $rule['rule_type'])->exists()) {
+                    $format->compositionRules()->create($rule);
+                }
             }
-
-            $format->compositionRules()->createMany($this->coreRules());
         }
     }
 
@@ -71,6 +71,14 @@ class GameFormatSeeder extends Seeder
                 'message' => [
                     'en' => 'Each enhancement can only be taken once.',
                     'fr' => 'Chaque optimisation ne peut être prise qu\'une fois.',
+                ],
+            ],
+            [
+                'rule_type' => 'enhancement_requires_character',
+                'parameters' => null,
+                'message' => [
+                    'en' => 'Enhancements can only be given to Characters that are not Epic Heroes.',
+                    'fr' => 'Les optimisations ne peuvent être données qu\'à des Personnages qui ne sont pas des Héros épiques.',
                 ],
             ],
             [
