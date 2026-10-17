@@ -28,7 +28,7 @@
                     :class="{ 'hidden': ! open, 'flex': open }"
                     class="hidden w-full flex-col gap-1 sm:flex sm:w-auto sm:flex-row sm:items-center sm:gap-6">
                     @foreach ([
-                        'Tableau de bord' => 'dashboard',
+                        'Tableau de bord' => 'home',
                         'Collection' => 'collection.index',
                         "Listes d'armée" => 'army-lists.index',
                         'Référentiel' => 'factions.index',

@@ -20,6 +20,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Mirror of the database default, so that unsaved or freshly created users have it too.
+     *
+     * @var array<string, string>
+     */
+    protected $attributes = [
+        'playable_min_status' => 'assembled',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

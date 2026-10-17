@@ -10,12 +10,12 @@ class HomePageTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_home_page_is_shown_to_authenticated_users(): void
+    public function test_the_home_page_is_the_dashboard_of_the_authenticated_user(): void
     {
         $this->withoutVite();
 
         $response = $this->actingAs(User::factory()->create(['name' => 'Yann']))->get('/');
 
-        $response->assertOk()->assertSee('W40k Collection')->assertSee('Yann')->assertSee('Déconnexion');
+        $response->assertOk()->assertSee('Tableau de bord')->assertSee('Yann')->assertSee('Déconnexion');
     }
 }

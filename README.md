@@ -199,10 +199,11 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 - [x] Seeders avec une faction de test (Space Marines + Blood Angels)
 
 ### Phase 2 : Collection
-- [ ] CRUD factions et unités (avec traduction FR)
-- [ ] CRUD figurines possédées (lots, quantités, statuts)
-- [ ] Upload de photos
-- [ ] Tableau de bord de progression
+- [x] CRUD factions et unités (avec traduction FR)
+- [x] CRUD figurines possédées (lots, quantités, statuts)
+- [x] Upload de photos
+- [x] Tableau de bord de progression
+- [x] Authentification (connexion, déconnexion) et paramètres (seuil de jouabilité)
 
 ### Phase 3 : Listes d'armée
 - [ ] Création et édition de listes (format, faction, détachement)
@@ -248,6 +249,11 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
 | 2026-10-17 | Authentification faite main dès la Phase 2 : connexion/déconnexion, 5 essais max, comptes créés par `app:create-user` | Aucune dépendance (pas de starter kit) ; données déjà rattachées au bon utilisateur ; inscription publique reportée à la Phase 6. |
 | 2026-10-17 | `lang/fr` écrit à la main (validation, auth, pagination, mots de passe) ; `lang/en` non publié | Pas de dépendance ; l'anglais reste fourni par le framework. |
 | 2026-10-17 | Styles partagés (`card`, `form-input`, `btn-primary`…) déclarés en `@utility` dans `app.css` | Vues homogènes sans composants Blade ; `@utility` requis par Tailwind 4 pour `@apply`. |
+| 2026-10-17 | Quantité d'un lot = somme de sa répartition par statut (saisie par statut, total calculé) | Garantit l'invariant somme = quantité sans contrôle séparé ; une perte se saisit en baissant un statut. |
+| 2026-10-17 | Photos sur le disque privé (`storage/app/private`), servies par une route contrôlant le propriétaire | Pas de `storage:link` ; photos jamais publiques, prêt pour le multi-utilisateur. |
+| 2026-10-17 | Points d'un lot estimés au coût par figurine du plus petit palier qui le contient (sinon le plus grand) | Donne une progression « en points » lisible même quand la taille du lot ne correspond à aucun palier. |
+| 2026-10-17 | Référentiel modifiable par tout utilisateur connecté | Mono-utilisateur pour l'instant ; rôle administrateur à prévoir en Phase 6. |
+| 2026-10-17 | `/` = tableau de bord ; coûts saisis dans la version de points en vigueur uniquement | Page d'accueil utile ; gestion des versions de points reportée (voir points en attente). |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
@@ -256,4 +262,8 @@ déclarés dans `AppServiceProvider`, jamais les noms de classes.
   (ex. restrictions d'optimisations aux Personnages) à compléter en Phase 3.
 - Données de seed : points et optimisations Blood Angels indicatifs, à remplacer par les vraies valeurs
   (saisie manuelle ou import BSData en Phase 5).
-- Proxys / kitbash : prévus dans le modèle, interface à définir.
+- Gestion des versions de points (création d'une nouvelle version, copie des coûts) : pas encore d'interface ;
+  les coûts se saisissent dans la version en vigueur.
+- Détachements et optimisations : saisis par seeder uniquement, pas encore d'écran de gestion.
+- Le navigateur intégré de l'assistant ne charge pas les assets du serveur Vite (`npm run dev`, autre origine) :
+  sans incidence pour l'application.

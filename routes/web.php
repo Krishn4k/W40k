@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CollectionLotController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FactionController;
 use App\Http\Controllers\LotPhotoController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +15,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::view('/', 'home')->name('home');
+    Route::get('/', DashboardController::class)->name('home');
+    Route::get('parametres', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('parametres', [SettingsController::class, 'update'])->name('settings.update');
     Route::post('deconnexion', [SessionController::class, 'destroy'])->name('logout');
 
     Route::resource('collection', CollectionLotController::class)
