@@ -278,7 +278,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Pré-remplissage à vérifier : tous les autres chapitres Space Marines (Black Templars, Dark Angels, Deathwatch, Space Wolves, Ultramarines, White Scars, Imperial Fists, Iron Hands, Raven Guard, Salamanders)
 - [x] Écran d'administration des traductions (avancement, filtres, statut « à vérifier »)
 - [x] Pré-remplissage à vérifier : Necrons, Orks, Tyranides (unités, détachements, optimisations)
-- [ ] Relecture des traductions pré-remplies ; autres factions par ordre de priorité : Chaos Space Marines, Astra Militarum, Aeldari, T'au, puis le reste
+- [x] Pré-remplissage à vérifier : Chaos Space Marines, Astra Militarum, Aeldari (dont Ynnari et Corsaires), Empire T'au
+- [ ] Relecture des 1 633 traductions pré-remplies ; factions restantes : Démons du Chaos, Death Guard, Thousand Sons, World Eaters, Emperor's Children, Chevaliers (Impériaux et du Chaos), Adepta Sororitas, Adeptus Custodes, Adeptus Mechanicus, Grey Knights, Agents de l'Imperium, Drukhari, Cultes Genestealers, Ligues de Votann, Titans, Forces non alignées, Légendes de l'Hérésie
 
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
