@@ -43,10 +43,12 @@ npm ci
 > `npm ci` installe exactement les versions de `package-lock.json` sans le modifier.
 > Réserver `npm install <paquet>` à l'ajout d'une dépendance.
 
-Créer la base de données (MySQL de Laragon démarré) :
+Créer les bases de données (MySQL de Laragon démarré) : `w40k` pour l'application,
+`w40k_testing` pour les tests :
 
 ```bash
 mysql -u root -e "CREATE DATABASE w40k CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -e "CREATE DATABASE w40k_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 php artisan migrate
 npm run build
 ```
@@ -221,6 +223,7 @@ Statuts de peinture, dans l'ordre :
 | 2026-10-17 | Traductions du référentiel en colonnes JSON (`{"en", "fr"}`), cast maison | Aucune dépendance ; nouvelle langue sans migration ; anglais = clé de rapprochement avec BSData. |
 | 2026-10-17 | Répartition par statut dans une table `lot_status_counts` | Un statut s'ajoute sans migration ; la somme est contrôlée en code. |
 | 2026-10-17 | 5 statuts de peinture : sur grappe, monté, sous-couché, peint, terminé | Granularité suffisante pour la progression ; « monté » sert de seuil de jouabilité par défaut. |
+| 2026-10-17 | Tests sur une base MySQL dédiée `w40k_testing` (au lieu de SQLite en mémoire) | Même moteur qu'en développement : JSON, clés étrangères et index uniques testés en conditions réelles. |
 
 ## 7. Problèmes connus et points en attente
 
