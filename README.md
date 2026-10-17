@@ -101,7 +101,7 @@ Principes déjà retenus :
 - [x] Création du projet Laravel et configuration Laragon
 - [x] Base de données et .env
 - [x] Tailwind et Alpine via Vite
-- [ ] Layout principal Blade
+- [x] Layout principal Blade
 - [x] README initial
 - [x] Initialisation Git et premier commit
 
@@ -147,6 +147,8 @@ Principes déjà retenus :
 | 2026-10-17 | Protocole de travail ajouté en tête de `CLAUDE.md` | Appliqué automatiquement par les futures sessions de l'assistant ; préservé par `boost:update`. |
 | 2026-10-17 | Alpine.js installé via npm et bundlé par Vite (pas de CDN) | Version figée dans `package-lock.json`, un seul bundle JS, fonctionne hors ligne. |
 | 2026-10-17 | Police via Fontsource au lieu de Bunny Fonts | Build sans réseau et testable partout ; police servie depuis l'application. |
+| 2026-10-17 | Layout unique `layouts/app` : barre de navigation en haut, menu mobile Alpine | Navigation simple ; liens grisés « bientôt » tant que les pages n'existent pas. |
+| 2026-10-17 | Thème clair/sombre automatique (`prefers-color-scheme`, variantes `dark:` de Tailwind) | Suit le réglage du système, sans JS ni préférence à stocker. |
 
 ## 7. Problèmes connus et points en attente
 
@@ -156,5 +158,3 @@ Principes déjà retenus :
 - Proxys / kitbash : prévus dans le modèle, interface à définir.
 - Fichiers de traduction Laravel en français (messages de validation, pagination)
   à ajouter avec la première interface (Phase 2) ; d'ici là, repli sur l'anglais.
-- Fonctionnement d'Alpine dans le navigateur à vérifier avec le layout principal (aucune page
-  ne charge encore `@vite`).
