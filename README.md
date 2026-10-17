@@ -37,8 +37,11 @@ cd w40k
 composer install
 copy .env.example .env
 php artisan key:generate
-npm install
+npm ci
 ```
+
+> `npm ci` installe exactement les versions de `package-lock.json` sans le modifier.
+> Réserver `npm install <paquet>` à l'ajout d'une dépendance.
 
 Créer la base de données (MySQL de Laragon démarré) :
 
@@ -135,6 +138,8 @@ Principes déjà retenus :
 |---|---|---|
 | 2026-10-03 | Laravel 13 / PHP 8.3 | Dernière version stable ; PHP 8.3.30 disponible dans Laragon. |
 | 2026-10-03 | Code généré et testé dans un environnement distant, récupéré par `git pull` | Permet de tester avant de pousser ; le README garde les commandes d'installation locale. |
+| 2026-10-17 | Fin de la Phase 0 : développement désormais en local (`C:\laragon\www\w40k`), push Git en fin de session | Travail direct dans l'environnement réel (Laragon, MySQL) ; remplace le développement distant. |
+| 2026-10-17 | `npm ci` pour installer les dépendances JS | Évite les modifications locales de `package-lock.json` qui bloquent `git pull`. |
 | 2026-10-03 | Collection par lots avec quantité ajustable | Saisie rapide, tout en gérant pertes et répartition par statut. |
 | 2026-10-03 | Validation complète des règles via un moteur de contraintes générique | Validation complète demandée, sans dépendance du cœur à BSData. |
 | 2026-10-03 | Données de référence en anglais, traduction FR en v1, interface FR | Compatibilité avec BSData (anglais) ; localisation extensible. |
