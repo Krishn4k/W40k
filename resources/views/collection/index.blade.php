@@ -106,6 +106,9 @@
                                     @if ($lot->countsAsUnit)
                                         <span class="block text-xs text-amber-700 dark:text-amber-400">Joué comme {{ $lot->countsAsUnit->name }}</span>
                                     @endif
+                                    @if ($lot->notes)
+                                        <span class="mt-0.5 block max-w-xs text-xs whitespace-pre-line text-zinc-500 italic line-clamp-2 dark:text-zinc-400" title="{{ $lot->notes }}">{{ $lot->notes }}</span>
+                                    @endif
                                     <span x-show="error" x-text="error" x-cloak class="form-error block"></span>
                                 </td>
                                 @foreach ($statuses as $index => $status)

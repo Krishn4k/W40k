@@ -82,12 +82,12 @@ class CollectionManagementTest extends TestCase
     public function test_the_index_only_shows_the_users_own_lots_grouped_by_faction(): void
     {
         $faction = Faction::factory()->create(['name' => ['en' => 'Space Marines']]);
-        CollectionLot::factory()->for($this->user)->for(Unit::factory()->for($faction)->create(['name' => ['en' => 'Intercessor Squad']]))->create();
+        CollectionLot::factory()->for($this->user)->for(Unit::factory()->for($faction)->create(['name' => ['en' => 'Intercessor Squad']]))->create(['notes' => 'Sergent à magnétiser']);
         CollectionLot::factory()->create(['unit_id' => Unit::factory()->create(['name' => ['en' => 'Boyz']])->id, 'label' => 'Lot de Thomas']);
 
         $this->actingAs($this->user)->get(route('collection.index'))
             ->assertOk()
-            ->assertSeeInOrder(['Space Marines', 'Intercessor Squad'])
+            ->assertSeeInOrder(['Space Marines', 'Intercessor Squad', 'Sergent à magnétiser'])
             ->assertDontSee('Lot de Thomas');
     }
 
