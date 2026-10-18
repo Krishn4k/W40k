@@ -73,8 +73,17 @@
 
     <main class="mx-auto max-w-7xl px-4 py-8">
         @if (session('status'))
-            <div role="status" class="mb-6 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-                {{ session('status') }}
+            {{-- Confirmation masquée après 5 secondes (le décompte s'arrête tant que la souris est dessus), ou fermée à la main. --}}
+            <div role="status"
+                 x-data="{ shown: true, timer: null, start() { this.timer = setTimeout(() => this.shown = false, 5000) } }"
+                 x-init="start()"
+                 x-show="shown"
+                 x-transition.opacity.duration.500ms
+                 @mouseenter="clearTimeout(timer)"
+                 @mouseleave="start()"
+                 class="mb-6 flex items-start justify-between gap-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+                <span>{{ session('status') }}</span>
+                <button type="button" @click="shown = false" aria-label="Fermer la notification" class="-my-1 rounded px-1.5 text-lg leading-none opacity-60 hover:opacity-100">×</button>
             </div>
         @endif
 
