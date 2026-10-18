@@ -40,7 +40,7 @@ Alpine.data('autoSubmitFilters', (delay = 300) => ({
         });
 
         this.$el.addEventListener('change', (event) => {
-            if (event.target.matches('select, input[type=checkbox]')) {
+            if (event.target.matches('select, input[type=checkbox], input[type=radio]')) {
                 this.refresh();
             }
         });
