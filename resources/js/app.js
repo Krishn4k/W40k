@@ -257,6 +257,28 @@ Alpine.data('gameDispositions', (config) => ({
 }));
 
 /**
+ * Recharge la page courante en arrière-plan et remplace chaque zone marquée data-live-stats (tuiles, pastilles,
+ * totaux) par sa version à jour, repérée par son id. Les clics rapprochés ne déclenchent qu'un seul rechargement.
+ */
+const refreshLiveStats = (() => {
+    let timer = null;
+
+    return () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const response = await fetch(window.location.href, { headers: { Accept: 'text/html' } });
+            if (! response.ok) {
+                return;
+            }
+            const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+            for (const fresh of page.querySelectorAll('[data-live-stats][id]')) {
+                document.getElementById(fresh.id)?.replaceWith(fresh);
+            }
+        }, 400);
+    };
+})();
+
+/**
  * Ligne d'un lot dans la Collection : les nombres par statut se modifient sur place (− / + / » vers le statut
  * suivant) et sont enregistrés en arrière-plan ; si le serveur refuse, l'état précédent revient avec son message.
  */
@@ -309,6 +331,7 @@ Alpine.data('lotStatusRow', (counts, statuses, url) => ({
                 throw new Error(Object.values(data.errors ?? {})[0]?.[0] ?? data.message ?? 'Enregistrement impossible.');
             }
             this.counts = { ...data.counts };
+            refreshLiveStats();
         } catch (exception) {
             this.counts = previous;
             this.error = exception.message;

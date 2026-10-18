@@ -6,14 +6,14 @@
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold">Collection</h1>
-            <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $totalModels }} figurine(s) au total, {{ count($ownedFactions) }} faction(s).</p>
+            <p id="collection-summary" data-live-stats class="text-sm text-zinc-600 dark:text-zinc-400">{{ $totalModels }} figurine(s) au total, {{ count($ownedFactions) }} faction(s).</p>
         </div>
         <a href="{{ route('collection.create') }}" class="btn-primary">Ajouter un lot</a>
     </div>
 
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <form method="GET" action="{{ route('collection.index') }}" x-data="autoSubmitFilters" data-results="#collection-results" class="flex flex-wrap items-end gap-2">
-            <fieldset class="flex flex-wrap gap-2">
+            <fieldset id="collection-faction-chips" data-live-stats class="flex flex-wrap gap-2">
                 <legend class="sr-only">Faction</legend>
                 <label class="faction-chip">
                     <input type="radio" name="faction" value="" class="sr-only" @checked($selectedFactionId === null)>
@@ -32,6 +32,8 @@
     </div>
 
     <div id="collection-results" class="aria-busy:opacity-60">
+    {{-- Zones marquées data-live-stats : rechargées depuis le serveur après chaque modification sur place. --}}
+    <div id="collection-stats" data-live-stats>
     @if ($progress['models'] > 0)
         <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             @include('collection._stat-tile', ['label' => 'Points', 'value' => $progress['points'], 'detail' => 'estimés (version en vigueur)'])
@@ -40,6 +42,7 @@
             @include('collection._stat-tile', ['label' => 'Points peints', 'value' => $paintedPointsPercent.' %', 'detail' => $progress['paintedPoints'].' / '.$progress['points'].' pts'])
         </div>
     @endif
+    </div>
     @php($statuses = collect(App\Enums\PaintStatus::cases())->map(fn ($status) => ['value' => $status->value, 'label' => $status->label(), 'color' => $status->colorClasses()])->values()->all())
 
     <form method="POST" action="{{ route('collection.store') }}" class="card mb-6 grid items-end gap-3 p-4 sm:grid-cols-[1fr_7rem_10rem_auto]">
@@ -74,7 +77,7 @@
 
     @forelse ($lotsByFaction as $factionName => $lots)
         <section class="mb-8">
-            <h2 class="mb-3 text-lg font-semibold">{{ $factionName }} <span class="text-sm font-normal text-zinc-500">({{ $lots->sum('quantity') }} fig.)</span></h2>
+            <h2 class="mb-3 text-lg font-semibold">{{ $factionName }} <span id="faction-models-{{ $loop->index }}" data-live-stats class="text-sm font-normal text-zinc-500">({{ $lots->sum('quantity') }} fig.)</span></h2>
             <div class="card overflow-x-auto p-0">
                 <table class="w-full text-left text-sm">
                     <thead class="border-b border-zinc-200 text-xs text-zinc-500 uppercase dark:border-zinc-800">

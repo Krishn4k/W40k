@@ -116,6 +116,9 @@ class CollectionManagementTest extends TestCase
         $this->lot($orks, [PaintStatus::Painted->value => 2, PaintStatus::Assembled->value => 10]);
 
         $page = $this->actingAs($this->user)->get(route('collection.index'))->assertOk();
+        foreach (['collection-summary', 'collection-faction-chips', 'collection-stats', 'faction-models-0'] as $liveZone) {
+            $page->assertSee('id="'.$liveZone.'" data-live-stats', false);
+        }
         $page->assertSeeInOrder(['Toutes', '20', 'Orks', '12', 'Space Marines', '8'])
             ->assertDontSee('Necrons')
             ->assertSeeInOrder(['Peintes', '35 %', '7 / 20 figurine(s)']);
