@@ -1,0 +1,12 @@
+{
+  "gameSystem": {
+    "name": "Warhammer 40,000 11th Edition",
+    "id": "sys-json",
+    "revision": 3,
+    "type": "gameSystem",
+    "xmlns": "http://www.battlescribe.net/schema/gameSystemSchema",
+    "costTypes": [
+      {"name": "pts", "id": "pts-id", "defaultCostLimit": -1, "hidden": true}
+    ]
+  }
+}

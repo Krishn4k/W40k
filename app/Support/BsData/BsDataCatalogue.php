@@ -8,7 +8,8 @@ use DOMXPath;
 use RuntimeException;
 
 /**
- * One BattleScribe file (.cat catalogue or .gst game system), read with XPath under the "b" namespace prefix.
+ * One BattleScribe file, read with XPath under the "b" namespace prefix: a .cat catalogue or .gst game
+ * system in XML (10th edition), or the same content transcribed in .json (11th edition), converted on load.
  */
 final class BsDataCatalogue
 {
@@ -24,9 +25,9 @@ final class BsDataCatalogue
 
     public function __construct(public readonly string $path)
     {
-        $document = new DOMDocument;
+        $document = str_ends_with(strtolower($path), '.json') ? self::documentFromJson($path) : new DOMDocument;
 
-        if (! @$document->load($path, LIBXML_NONET | LIBXML_COMPACT)) {
+        if (! $document->documentElement && ! @$document->load($path, LIBXML_NONET | LIBXML_COMPACT)) {
             throw new RuntimeException("Fichier BSData illisible : {$path}");
         }
 
@@ -38,6 +39,74 @@ final class BsDataCatalogue
         $this->name = $root->getAttribute('name');
         $this->isLibrary = $root->getAttribute('library') === 'true';
         $this->isGameSystem = $root->localName === 'gameSystem';
+    }
+
+    /**
+     * Rebuild the BattleScribe XML tree from its JSON transcription: scalar properties become attributes,
+     * lists become a container element holding one singular child per item ("costs" → <costs><cost/></costs>,
+     * "sharedSelectionEntries" → <sharedSelectionEntries><selectionEntry/></sharedSelectionEntries>).
+     */
+    private static function documentFromJson(string $path): DOMDocument
+    {
+        $data = json_decode((string) @file_get_contents($path), true);
+        $rootName = is_array($data) ? array_key_first($data) : null;
+
+        if (! in_array($rootName, ['catalogue', 'gameSystem'], true) || ! is_array($data[$rootName])) {
+            throw new RuntimeException("Fichier BSData illisible : {$path}");
+        }
+
+        $properties = $data[$rootName];
+        $namespace = $properties['xmlns'] ?? "http://www.battlescribe.net/schema/{$rootName}Schema";
+        unset($properties['xmlns']);
+
+        $document = new DOMDocument;
+        $root = $document->createElementNS($namespace, $rootName);
+        $document->appendChild($root);
+        self::appendJsonProperties($document, $root, $properties, $namespace);
+
+        return $document;
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     */
+    private static function appendJsonProperties(DOMDocument $document, DOMElement $element, array $properties, string $namespace): void
+    {
+        foreach ($properties as $key => $value) {
+            if (is_array($value) && array_is_list($value)) {
+                $container = $document->createElementNS($namespace, $key);
+                $element->appendChild($container);
+                $childName = self::singular($key);
+
+                foreach ($value as $item) {
+                    $child = $document->createElementNS($namespace, $childName);
+                    $container->appendChild($child);
+                    is_array($item) ? self::appendJsonProperties($document, $child, $item, $namespace) : $child->textContent = (string) $item;
+                }
+            } elseif (is_array($value)) {
+                $child = $document->createElementNS($namespace, $key);
+                $element->appendChild($child);
+                self::appendJsonProperties($document, $child, $value, $namespace);
+            } elseif ($key === '$text') {
+                $element->appendChild($document->createTextNode((string) $value));
+            } elseif ($value !== null && preg_match('/^[A-Za-z_][\w.-]*$/', (string) $key) === 1) {
+                $element->setAttribute($key, is_bool($value) ? ($value ? 'true' : 'false') : (string) $value);
+            }
+        }
+    }
+
+    /**
+     * Element name of a list item: "sharedSelectionEntries" → "selectionEntry", "costs" → "cost".
+     */
+    private static function singular(string $listName): string
+    {
+        $name = lcfirst((string) preg_replace('/^shared/', '', $listName));
+
+        return match (true) {
+            str_ends_with($name, 'ies') => substr($name, 0, -3).'y',
+            str_ends_with($name, 's') => substr($name, 0, -1),
+            default => $name,
+        };
     }
 
     /**

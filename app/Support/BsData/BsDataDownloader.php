@@ -35,13 +35,13 @@ final class BsDataDownloader
             ->get("https://api.github.com/repos/{$this->repository}/contents", ['ref' => $this->branch])
             ->throw()
             ->collect()
-            ->filter(fn (array $file): bool => ($file['type'] ?? null) === 'file' && preg_match('/\.(cat|gst)$/', $file['name']) === 1)
+            ->filter(fn (array $file): bool => ($file['type'] ?? null) === 'file' && preg_match('/\.(cat|gst|json)$/', $file['name']) === 1)
             ->values();
 
         File::ensureDirectoryExists($this->directory);
 
         // GLOB_BRACE is not available on Windows: one pattern per extension.
-        foreach ([...File::glob($this->directory.'/*.cat'), ...File::glob($this->directory.'/*.gst')] as $stale) {
+        foreach ([...File::glob($this->directory.'/*.cat'), ...File::glob($this->directory.'/*.gst'), ...File::glob($this->directory.'/*.json')] as $stale) {
             File::delete($stale);
         }
 

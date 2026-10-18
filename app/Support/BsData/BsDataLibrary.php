@@ -33,10 +33,10 @@ final class BsDataLibrary
 
     public function __construct(public readonly string $directory)
     {
-        $paths = array_merge(glob($directory.'/*.gst') ?: [], glob($directory.'/*.cat') ?: []);
+        $paths = array_merge(glob($directory.'/*.gst') ?: [], glob($directory.'/*.cat') ?: [], glob($directory.'/*.json') ?: []);
 
         if ($paths === []) {
-            throw new RuntimeException("Aucun fichier BSData (.gst, .cat) dans {$directory}.");
+            throw new RuntimeException("Aucun fichier BSData (.gst, .cat, .json) dans {$directory}.");
         }
 
         $this->catalogues = collect($paths)

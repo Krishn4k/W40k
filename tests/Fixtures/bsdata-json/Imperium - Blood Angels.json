@@ -1,0 +1,61 @@
+{
+  "catalogue": {
+    "name": "Imperium - Adeptus Astartes - Blood Angels",
+    "id": "cat-ba-json",
+    "library": false,
+    "revision": 7,
+    "type": "catalogue",
+    "xmlns": "http://www.battlescribe.net/schema/catalogueSchema",
+    "entryLinks": [
+      {"name": "Sanguinary Guard", "id": "link-guard", "hidden": false, "import": true, "targetId": "unit-guard-json", "type": "selectionEntry"}
+    ],
+    "sharedSelectionEntries": [
+      {
+        "name": "Sanguinary Guard",
+        "id": "unit-guard-json",
+        "hidden": false,
+        "import": true,
+        "type": "unit",
+        "categoryLinks": [
+          {"name": "Infantry", "id": "cl-1", "primary": true, "targetId": "cat-infantry"}
+        ],
+        "profiles": [
+          {
+            "name": "Sanguinary Guard",
+            "id": "profile-1",
+            "typeName": "Abilities",
+            "characteristics": [
+              {"name": "Description", "typeId": "desc", "$text": "- This unit's models can fly."}
+            ]
+          }
+        ],
+        "selectionEntryGroups": [
+          {
+            "name": "Sanguinary Guard",
+            "id": "group-guard-json",
+            "constraints": [
+              {"id": "c-1", "field": "selections", "scope": "parent", "shared": true, "type": "min", "value": 3},
+              {"id": "c-2", "field": "selections", "scope": "parent", "shared": true, "type": "max", "value": 6}
+            ],
+            "selectionEntries": [
+              {"name": "Sanguinary Guard", "id": "model-guard-json", "type": "model", "import": true}
+            ]
+          }
+        ],
+        "costs": [
+          {"name": "pts", "typeId": "pts-id", "value": 135}
+        ],
+        "modifiers": [
+          {
+            "type": "set",
+            "field": "pts-id",
+            "value": 275,
+            "conditions": [
+              {"id": "cond-1", "childId": "group-guard-json", "field": "selections", "scope": "unit-guard-json", "shared": true, "type": "atLeast", "value": 4}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

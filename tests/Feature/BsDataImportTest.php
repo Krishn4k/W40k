@@ -68,6 +68,17 @@ class BsDataImportTest extends TestCase
         $this->assertSame(1, $result['counts']['skippedCostModifiers'], 'The detachment-dependent increment is skipped.');
     }
 
+    public function test_the_eleventh_edition_json_format_is_read_like_the_xml_one(): void
+    {
+        $result = (new BsDataImporter(new BsDataLibrary(base_path('tests/Fixtures/bsdata-json'))))->import();
+
+        $guard = Unit::query()->where('bsdata_id', 'unit-guard-json')->sole();
+        $this->assertSame('Blood Angels', $guard->faction->name->get('en'));
+        $this->assertSame([3 => 135, 6 => 275], $this->costs($guard, $result['pointSet']));
+        $this->assertSame(['Infantry'], $guard->keywords->map(fn ($keyword) => $keyword->name->get('en'))->all());
+        $this->assertSame('BSData Warhammer 40,000 11th Edition (rév. 3)', $result['pointSet']->name);
+    }
+
     public function test_library_units_belong_to_the_closest_importing_faction(): void
     {
         $result = $this->import();
