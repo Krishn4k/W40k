@@ -33,7 +33,7 @@
                         <td class="px-4 py-3 font-medium">
                             {{ $user->name }}
                             @if ($user->is_admin)
-                                <span class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-300">Admin</span>
+                                <span class="ml-1 rounded bg-accent-100 px-1.5 py-0.5 text-xs text-accent-800 dark:bg-accent-950 dark:text-accent-300">Admin</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">{{ $user->email }}</td>

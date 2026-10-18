@@ -257,6 +257,68 @@ Alpine.data('gameDispositions', (config) => ({
 }));
 
 /**
+ * Ligne d'un lot dans la Collection : les nombres par statut se modifient sur place (− / + / » vers le statut
+ * suivant) et sont enregistrés en arrière-plan ; si le serveur refuse, l'état précédent revient avec son message.
+ */
+Alpine.data('lotStatusRow', (counts, statuses, url) => ({
+    counts: { ...counts },
+    statuses,
+    saving: false,
+    error: '',
+
+    get quantity() {
+        return Object.values(this.counts).reduce((total, count) => total + (count ?? 0), 0);
+    },
+
+    get painted() {
+        return (this.counts.painted ?? 0) + (this.counts.finished ?? 0);
+    },
+
+    change(status, delta) {
+        const previous = { ...this.counts };
+        this.counts[status] = Math.max(0, (this.counts[status] ?? 0) + delta);
+        this.save(previous);
+    },
+
+    advance(status) {
+        const next = this.statuses[this.statuses.findIndex((candidate) => candidate.value === status) + 1];
+        if (! next || ! this.counts[status]) {
+            return;
+        }
+        const previous = { ...this.counts };
+        this.counts[status] -= 1;
+        this.counts[next.value] = (this.counts[next.value] ?? 0) + 1;
+        this.save(previous);
+    },
+
+    async save(previous) {
+        this.saving = true;
+        this.error = '';
+        try {
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                body: JSON.stringify({ statuses: this.counts }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (! response.ok) {
+                throw new Error(Object.values(data.errors ?? {})[0]?.[0] ?? data.message ?? 'Enregistrement impossible.');
+            }
+            this.counts = { ...data.counts };
+        } catch (exception) {
+            this.counts = previous;
+            this.error = exception.message;
+        } finally {
+            this.saving = false;
+        }
+    },
+}));
+
+/**
  * Contenu JSON d'un élément de la page (ex. <script type="application/json">), analysé une seule fois
  * puis partagé par tous les composants qui le demandent.
  */

@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@hasSection('title')@yield('title') · @endif{{ config('app.name') }}</title>
 
@@ -10,9 +11,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
-    <header x-data="{ open: false }" class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <header x-data="{ open: false }" class="border-b-2 border-accent-600 bg-white dark:bg-zinc-900">
         <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-y-2 px-4 py-3">
-            <a href="{{ route('home') }}" class="font-semibold tracking-wide">{{ config('app.name') }}</a>
+            <a href="{{ route('home') }}" class="font-display text-lg font-semibold tracking-wider uppercase">{{ config('app.name') }}</a>
 
             @auth
                 {{-- Bouton menu mobile --}}
@@ -37,8 +38,8 @@
                         <li>
                             <a href="{{ route($routeName) }}"
                                @class([
-                                   'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
-                                   'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs(...$activePatterns),
+                                   'block py-1 hover:text-accent-700 dark:hover:text-accent-400',
+                                   'font-semibold text-accent-700 dark:text-accent-400' => request()->routeIs(...$activePatterns),
                                ])>{{ $label }}</a>
                         </li>
                     @endforeach
@@ -46,23 +47,23 @@
                         <li>
                             <a href="{{ route('translations.overview') }}"
                                @class([
-                                   'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
-                                   'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs('translations.*'),
+                                   'block py-1 hover:text-accent-700 dark:hover:text-accent-400',
+                                   'font-semibold text-accent-700 dark:text-accent-400' => request()->routeIs('translations.*'),
                                ])>Traductions</a>
                         </li>
                         <li>
                             <a href="{{ route('admin.users.index') }}"
                                @class([
-                                   'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
-                                   'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs('admin.*'),
+                                   'block py-1 hover:text-accent-700 dark:hover:text-accent-400',
+                                   'font-semibold text-accent-700 dark:text-accent-400' => request()->routeIs('admin.*'),
                                ])>Administration</a>
                         </li>
                     @endcan
                     <li class="flex items-center gap-3 border-t border-zinc-200 pt-2 sm:border-0 sm:pt-0 dark:border-zinc-800">
-                        <a href="{{ route('settings.edit') }}" title="Paramètres" class="text-sm text-zinc-600 hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-400">{{ auth()->user()->name }}</a>
+                        <a href="{{ route('settings.edit') }}" title="Paramètres" class="text-sm text-zinc-600 hover:text-accent-700 dark:text-zinc-400 dark:hover:text-accent-400">{{ auth()->user()->name }}</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="text-sm text-zinc-600 hover:text-amber-700 dark:text-zinc-400 dark:hover:text-amber-400">Déconnexion</button>
+                            <button type="submit" class="text-sm text-zinc-600 hover:text-accent-700 dark:text-zinc-400 dark:hover:text-accent-400">Déconnexion</button>
                         </form>
                     </li>
                 </ul>

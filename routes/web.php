@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('collection', CollectionLotController::class)
         ->except('show')
         ->parameters(['collection' => 'lot']);
+    Route::patch('collection/{lot}/statuts', [CollectionLotController::class, 'updateStatuses'])->name('collection.statuses.update');
     Route::scopeBindings()->prefix('collection/{lot}/photos')->name('collection.photos.')->group(function () {
         Route::post('/', [LotPhotoController::class, 'store'])->name('store');
         Route::get('{photo}', [LotPhotoController::class, 'show'])->name('show');

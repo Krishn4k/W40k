@@ -4,8 +4,8 @@
         <a href="{{ route($routeName) }}"
            @class([
                '-mb-px border-b-2 px-1 pb-2',
-               'border-amber-600 font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs($routeName),
-               'border-transparent text-zinc-600 hover:text-amber-700 dark:text-zinc-400' => ! request()->routeIs($routeName),
+               'border-accent-600 font-semibold text-accent-700 dark:text-accent-400' => request()->routeIs($routeName),
+               'border-transparent text-zinc-600 hover:text-accent-700 dark:text-zinc-400' => ! request()->routeIs($routeName),
            ])>{{ $label }}</a>
     @endforeach
 </nav>

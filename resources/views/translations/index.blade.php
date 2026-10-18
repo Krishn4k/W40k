@@ -10,8 +10,8 @@
             <a href="{{ route('translations.index', ['type' => $typeKey, 'status' => $status]) }}"
                @class([
                    'rounded-full border px-3 py-1 text-sm',
-                   'border-amber-600 bg-amber-50 font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300' => $type === $typeKey,
-                   'border-zinc-300 hover:border-amber-600 dark:border-zinc-700' => $type !== $typeKey,
+                   'border-accent-600 bg-accent-50 font-semibold text-accent-800 dark:bg-accent-950 dark:text-accent-300' => $type === $typeKey,
+                   'border-zinc-300 hover:border-accent-600 dark:border-zinc-700' => $type !== $typeKey,
                ])>{{ $typeLabel }}</a>
         @endforeach
     </div>

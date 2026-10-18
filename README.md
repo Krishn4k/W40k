@@ -325,6 +325,13 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Mots-clés : 147 courants traduits à la main, 866 déduits du nom traduit de l'unité ou de la faction correspondante (1 013 / 1 594)
 - [ ] Relecture des 3 580 traductions « à vérifier » ; 581 mots-clés rares encore en anglais
 
+### Collection : tableau de bord et édition sur place
+- [x] Tuiles en tête de la Collection : points estimés, figurines, % peint en figurines et en points (suivent le filtre)
+- [x] Filtre par pastilles des factions possédées avec leur nombre de figurines (chapitres comptés dans leur faction mère)
+- [x] Ajout rapide d'un lot (unité, quantité, statut) en tête de page, filtre conservé
+- [x] Tableau éditable sur place : − / + par statut et » pour passer une figurine au statut suivant, enregistré en arrière-plan
+- [x] Thème : accent turquoise (l'ambre reste pour les avertissements), titres en Oswald, en-tête souligné
+
 ### Audit et performances
 - [x] Premier audit (performance, maintenabilité) avec mesure des pages : taille et nombre de requêtes
 - [x] Page d'une liste : options des formulaires d'unité envoyées une seule fois (831 → 135 Ko pour 8 unités)
@@ -403,6 +410,9 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Mission déduite écrite dans le champ texte Mission (« Immovable Object (Objet inébranlable) ») sans écraser une saisie libre | Les parties existantes et les missions hors tournoi restent saisissables ; pas de nouvelle colonne. |
 | 2026-10-18 | `ArmyListReferenceData` : coûts, rattachements et règles chargés par lot pour toutes les listes analysées | Le nombre de requêtes de l'index ne dépend plus du nombre de listes ; un seul chemin de code pour une liste ou plusieurs. |
 | 2026-10-18 | Options des formulaires d'unité dans un bloc JSON unique de la page (`<script type="application/json">`), lu une fois par Alpine | Évite de recopier toutes les unités de la faction dans chaque formulaire de modification. |
+| 2026-10-18 | Édition des statuts d'un lot en arrière-plan (`PATCH collection/{lot}/statuts`, JSON) ; validation partagée avec le formulaire complet (trait `ValidatesStatusCounts`) | Saisie rapide sans rechargement ; en cas de refus, la ligne revient à l'état précédent avec le message. |
+| 2026-10-18 | Police de titre Oswald via `bunny()` de `laravel-vite-plugin` : téléchargée au build, servie par l'application | Aucune dépendance npm ni requête externe au chargement des pages (`fontsource()` exigeait un paquet `@fontsource`). |
+| 2026-10-18 | Couleur d'accent définie une fois (`--color-accent-*` = turquoise) au lieu de classes `teal-*` dispersées | Changer de couleur d'accent ne touche qu'une ligne du thème. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

@@ -30,8 +30,16 @@ final class CollectionProgress
 
     public static function forUser(User $user, ?PointSet $pointSet): self
     {
-        $lots = $user->collectionLots()->with(['statusCounts', 'unit.faction.parent'])->get();
+        return self::forLots($user->collectionLots()->with(['statusCounts', 'unit.faction.parent'])->get(), $pointSet);
+    }
 
+    /**
+     * Progress of the given lots (with their status counts loaded).
+     *
+     * @param  Collection<int, CollectionLot>  $lots
+     */
+    public static function forLots(Collection $lots, ?PointSet $pointSet): self
+    {
         $costsByUnit = UnitPointCost::query()
             ->where('point_set_id', $pointSet?->id)
             ->whereIn('unit_id', $lots->map(fn (CollectionLot $lot): int => $lot->playedUnitId())->unique())

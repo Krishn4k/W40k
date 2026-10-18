@@ -48,7 +48,7 @@
             @include('army-lists._status-badges')
         </div>
         <div class="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-            <div @class(['h-full', 'bg-amber-600' => $total <= $limit, 'bg-red-600' => $total > $limit]) style="width: {{ min(100, $limit > 0 ? round($total / $limit * 100, 2) : 0) }}%"></div>
+            <div @class(['h-full', 'bg-accent-600' => $total <= $limit, 'bg-red-600' => $total > $limit]) style="width: {{ min(100, $limit > 0 ? round($total / $limit * 100, 2) : 0) }}%"></div>
         </div>
     </div>
 

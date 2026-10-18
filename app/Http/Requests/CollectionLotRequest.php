@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\PaintStatus;
+use App\Http\Requests\Concerns\ValidatesStatusCounts;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,10 +13,7 @@ use Illuminate\Validation\Validator;
  */
 class CollectionLotRequest extends FormRequest
 {
-    /**
-     * Maximum number of models in a single lot.
-     */
-    public const MAX_QUANTITY = 999;
+    use ValidatesStatusCounts;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -35,19 +32,13 @@ class CollectionLotRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
+        return [
             'unit_id' => ['required', 'integer', Rule::exists('units', 'id')],
             'counts_as_unit_id' => ['nullable', 'integer', Rule::exists('units', 'id'), 'different:unit_id'],
             'label' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
-            'statuses' => ['required', 'array'],
+            ...$this->statusCountRules(),
         ];
-
-        foreach (PaintStatus::cases() as $status) {
-            $rules["statuses.{$status->value}"] = ['nullable', 'integer', 'min:0', 'max:'.self::MAX_QUANTITY];
-        }
-
-        return $rules;
     }
 
     /**
@@ -55,9 +46,7 @@ class CollectionLotRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return collect(PaintStatus::cases())
-            ->mapWithKeys(fn (PaintStatus $status): array => ["statuses.{$status->value}" => mb_strtolower($status->label())])
-            ->all();
+        return $this->statusCountAttributes();
     }
 
     /**
@@ -75,31 +64,6 @@ class CollectionLotRequest extends FormRequest
      */
     public function after(): array
     {
-        return [
-            function (Validator $validator): void {
-                if ($validator->errors()->isNotEmpty()) {
-                    return;
-                }
-
-                $quantity = array_sum($this->statusCounts());
-
-                if ($quantity < 1 || $quantity > self::MAX_QUANTITY) {
-                    $validator->errors()->add('statuses', 'Un lot doit contenir entre 1 et '.self::MAX_QUANTITY.' figurines.');
-                }
-            },
-        ];
-    }
-
-    /**
-     * Non-zero model counts keyed by status value.
-     *
-     * @return array<string, int>
-     */
-    public function statusCounts(): array
-    {
-        return collect(PaintStatus::cases())
-            ->mapWithKeys(fn (PaintStatus $status): array => [$status->value => (int) $this->input("statuses.{$status->value}")])
-            ->filter()
-            ->all();
+        return [fn (Validator $validator) => $this->validateTotalQuantity($validator)];
     }
 }
