@@ -75,13 +75,18 @@ class PointSetController extends Controller
     }
 
     /**
-     * Copy every unit and enhancement cost from one point set to another, in bulk.
+     * Copy every unit (with its requisition thresholds), wargear and enhancement cost from one point set to another, in bulk.
      */
     private function copyCosts(PointSet $source, PointSet $target): void
     {
         DB::table('unit_point_costs')->insertUsing(
-            ['unit_id', 'point_set_id', 'model_count', 'points'],
-            DB::table('unit_point_costs')->where('point_set_id', $source->id)->select('unit_id', DB::raw((int) $target->id), 'model_count', 'points'),
+            ['unit_id', 'point_set_id', 'model_count', 'from_copy', 'points'],
+            DB::table('unit_point_costs')->where('point_set_id', $source->id)->select('unit_id', DB::raw((int) $target->id), 'model_count', 'from_copy', 'points'),
+        );
+
+        DB::table('unit_wargear_costs')->insertUsing(
+            ['unit_id', 'point_set_id', 'name', 'points'],
+            DB::table('unit_wargear_costs')->where('point_set_id', $source->id)->select('unit_id', DB::raw((int) $target->id), 'name', 'points'),
         );
 
         DB::table('enhancement_point_costs')->insertUsing(

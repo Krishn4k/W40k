@@ -136,7 +136,7 @@ class UnitController extends Controller
             'factionOptions' => $this->factionOptions(),
             'pointSet' => $pointSet,
             'costs' => $unit->exists && $pointSet
-                ? $unit->pointCosts()->whereBelongsTo($pointSet)->orderBy('model_count')->get(['model_count', 'points'])->toArray()
+                ? $unit->pointCosts()->whereBelongsTo($pointSet)->orderBy('model_count')->orderBy('from_copy')->get(['model_count', 'from_copy', 'points'])->toArray()
                 : [],
         ];
     }

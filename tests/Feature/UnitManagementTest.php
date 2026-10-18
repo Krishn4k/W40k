@@ -77,7 +77,7 @@ class UnitManagementTest extends TestCase
         $this->assertSame(90, $unit->pointCosts()->whereBelongsTo($oldPointSet)->sole()->points);
     }
 
-    public function test_cost_rows_must_have_distinct_squad_sizes(): void
+    public function test_cost_rows_must_have_distinct_squad_sizes_for_the_same_copy_rank(): void
     {
         $this->actingAs($this->user)->post(route('units.store'), [
             'faction_id' => Faction::factory()->create()->id,
@@ -87,9 +87,34 @@ class UnitManagementTest extends TestCase
                 ['model_count' => '5', 'points' => '110'],
                 ['model_count' => '5', 'points' => '120'],
             ],
-        ])->assertSessionHasErrors('costs.0.model_count');
+        ])->assertSessionHasErrors('costs');
 
         $this->assertSame(0, Unit::count());
+    }
+
+    public function test_requisition_thresholds_survive_editing_the_unit(): void
+    {
+        $unit = Unit::factory()->create(['name' => ['en' => 'Boyz']]);
+        $unit->pointCosts()->create(['point_set_id' => $this->pointSet->id, 'model_count' => 10, 'from_copy' => 1, 'points' => 85]);
+        $unit->pointCosts()->create(['point_set_id' => $this->pointSet->id, 'model_count' => 10, 'from_copy' => 3, 'points' => 95]);
+
+        $this->actingAs($this->user)->get(route('units.edit', $unit))->assertOk()->assertSee('from_copy', false)->assertSee('95', false);
+
+        $this->actingAs($this->user)->put(route('units.update', $unit), [
+            'faction_id' => $unit->faction_id,
+            'name' => ['en' => 'Boyz', 'fr' => 'Boyz'],
+            'role' => UnitRole::Battleline->value,
+            'costs' => [
+                ['model_count' => '10', 'from_copy' => '1', 'points' => '85'],
+                ['model_count' => '10', 'from_copy' => '3', 'points' => '95'],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            ['1' => 85, '3' => 95],
+            $unit->pointCosts()->whereBelongsTo($this->pointSet)->orderBy('from_copy')->pluck('points', 'from_copy')->all(),
+        );
+        $this->actingAs($this->user)->get(route('units.index'))->assertOk()->assertSee('3e+ : 95');
     }
 
     public function test_the_index_can_be_filtered_by_faction_and_role(): void

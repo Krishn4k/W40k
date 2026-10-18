@@ -58,6 +58,15 @@ class CollectionProgressTest extends TestCase
         $this->assertSame(300, CollectionProgress::forUser($this->user, $this->pointSet)->overall()['points']);
     }
 
+    public function test_the_estimate_uses_the_base_price_not_a_requisition_threshold(): void
+    {
+        $unit = $this->unitWithCosts(Faction::factory()->create(), [10 => 85]);
+        $unit->pointCosts()->create(['point_set_id' => $this->pointSet->id, 'model_count' => 10, 'from_copy' => 3, 'points' => 95]);
+        $this->lot($unit, [PaintStatus::OnSprue->value => 10]);
+
+        $this->assertSame(85, CollectionProgress::forUser($this->user, $this->pointSet)->overall()['points']);
+    }
+
     public function test_a_proxy_lot_is_valued_as_the_unit_it_counts_as(): void
     {
         $faction = Faction::factory()->create();

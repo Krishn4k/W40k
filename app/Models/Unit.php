@@ -126,7 +126,7 @@ class Unit extends Model
         $query->with([
             'faction',
             'keywords',
-            'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count'),
+            'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')->orderBy('from_copy'),
         ]);
     }
 

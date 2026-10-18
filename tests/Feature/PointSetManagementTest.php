@@ -40,6 +40,8 @@ class PointSetManagementTest extends TestCase
         $unit = Unit::factory()->create();
         $unit->pointCosts()->create(['point_set_id' => $source->id, 'model_count' => 5, 'points' => 80]);
         $unit->pointCosts()->create(['point_set_id' => $source->id, 'model_count' => 10, 'points' => 160]);
+        $unit->pointCosts()->create(['point_set_id' => $source->id, 'model_count' => 10, 'from_copy' => 3, 'points' => 180]);
+        $unit->wargearCosts()->create(['point_set_id' => $source->id, 'name' => 'Plasma Pistol', 'points' => 5]);
         $enhancement = Enhancement::factory()->create();
         $enhancement->pointCosts()->create(['point_set_id' => $source->id, 'points' => 25]);
 
@@ -52,9 +54,11 @@ class PointSetManagementTest extends TestCase
 
         $copy = PointSet::query()->where('name', 'MFM 2026 v2')->sole();
         $this->assertTrue(PointSet::current()->is($copy));
-        $this->assertSame([5 => 80, 10 => 160], $unit->pointCosts()->whereBelongsTo($copy)->orderBy('model_count')->pluck('points', 'model_count')->all());
+        $this->assertSame([5 => 80, 10 => 160], $unit->pointCosts()->whereBelongsTo($copy)->where('from_copy', 1)->orderBy('model_count')->pluck('points', 'model_count')->all());
+        $this->assertSame(180, $unit->pointCosts()->whereBelongsTo($copy)->where('from_copy', 3)->value('points'));
+        $this->assertSame(5, $unit->wargearCosts()->whereBelongsTo($copy)->value('points'));
         $this->assertSame(25, $enhancement->pointCosts()->whereBelongsTo($copy)->sole()->points);
-        $this->assertSame(2, $unit->pointCosts()->whereBelongsTo($source)->count());
+        $this->assertSame(3, $unit->pointCosts()->whereBelongsTo($source)->count());
     }
 
     public function test_the_end_date_cannot_precede_the_start_date_and_names_are_unique(): void

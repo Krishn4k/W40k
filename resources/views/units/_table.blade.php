@@ -33,8 +33,13 @@
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">{{ $unit->role->label() }}</td>
                     <td class="px-4 py-3 whitespace-nowrap">
-                        @forelse ($unit->pointCosts as $cost)
-                            <span class="block">{{ $cost->model_count }} fig. : <strong>{{ $cost->points }}</strong> pts</span>
+                        @forelse ($unit->pointCosts->groupBy('model_count') as $modelCount => $tiers)
+                            <span class="block">
+                                {{ $modelCount }} fig. : <strong>{{ $tiers->firstWhere('from_copy', 1)?->points ?? $tiers->first()->points }}</strong> pts
+                                @foreach ($tiers->where('from_copy', '>', 1)->sortBy('from_copy') as $tier)
+                                    <span class="text-xs text-zinc-500" title="Seuil de réquisition : prix à partir de la {{ $tier->from_copy }}e unité identique">· {{ $tier->from_copy }}e+ : {{ $tier->points }}</span>
+                                @endforeach
+                            </span>
                         @empty
                             <span class="text-zinc-400">—</span>
                         @endforelse

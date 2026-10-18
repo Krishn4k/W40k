@@ -43,6 +43,7 @@ final class CollectionProgress
         $costsByUnit = UnitPointCost::query()
             ->where('point_set_id', $pointSet?->id)
             ->whereIn('unit_id', $lots->map(fn (CollectionLot $lot): int => $lot->playedUnitId())->unique())
+            ->where('from_copy', 1)
             ->orderBy('model_count')
             ->get()
             ->groupBy('unit_id');

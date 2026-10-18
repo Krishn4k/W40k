@@ -6,6 +6,7 @@ use App\Enums\UnitRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UnitRequest extends FormRequest
 {
@@ -24,6 +25,7 @@ class UnitRequest extends FormRequest
     {
         $costs = collect($this->input('costs', []))
             ->filter(fn ($cost): bool => is_array($cost) && (filled($cost['model_count'] ?? null) || filled($cost['points'] ?? null)))
+            ->map(fn (array $cost): array => [...$cost, 'from_copy' => filled($cost['from_copy'] ?? null) ? $cost['from_copy'] : 1])
             ->values()
             ->all();
 
@@ -45,8 +47,25 @@ class UnitRequest extends FormRequest
             'is_epic_hero' => ['boolean'],
             'keywords' => ['nullable', 'string', 'max:2000'],
             'costs' => ['array'],
-            'costs.*.model_count' => ['required', 'integer', 'min:1', 'max:100', 'distinct'],
+            'costs.*.model_count' => ['required', 'integer', 'min:1', 'max:100'],
+            'costs.*.from_copy' => ['required', 'integer', 'min:1', 'max:10'],
             'costs.*.points' => ['required', 'integer', 'min:0', 'max:5000'],
+        ];
+    }
+
+    /**
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $tiers = collect($this->input('costs', []))->map(fn (array $cost): string => (int) ($cost['model_count'] ?? 0).':'.(int) ($cost['from_copy'] ?? 1));
+
+                if ($tiers->duplicates()->isNotEmpty()) {
+                    $validator->errors()->add('costs', 'Deux paliers ont la même taille d\'escouade et le même exemplaire de départ.');
+                }
+            },
         ];
     }
 
@@ -57,6 +76,7 @@ class UnitRequest extends FormRequest
     {
         return [
             'costs.*.model_count' => 'nombre de figurines',
+            'costs.*.from_copy' => 'exemplaire de départ',
             'costs.*.points' => 'points',
         ];
     }

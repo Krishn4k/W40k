@@ -44,7 +44,7 @@
     @enderror
 </div>
 
-<fieldset x-data="{ costs: @js(array_values(old('costs', $costs)) ?: [['model_count' => '', 'points' => '']]) }">
+<fieldset x-data="{ costs: @js(array_values(old('costs', $costs)) ?: [['model_count' => '', 'from_copy' => 1, 'points' => '']]) }">
     <legend class="form-label">
         Points par taille d'escouade
         @if ($pointSet)
@@ -61,12 +61,18 @@
                     <input type="number" min="1" max="100" :name="`costs[${index}][model_count]`" x-model="cost.model_count" placeholder="Figurines" aria-label="Nombre de figurines" class="form-input mt-0 w-32">
                     <span class="text-sm text-zinc-500">figurines →</span>
                     <input type="number" min="0" max="5000" :name="`costs[${index}][points]`" x-model="cost.points" placeholder="Points" aria-label="Points" class="form-input mt-0 w-32">
-                    <span class="text-sm text-zinc-500">pts</span>
+                    <span class="text-sm text-zinc-500">pts, dès le</span>
+                    <input type="number" min="1" max="10" :name="`costs[${index}][from_copy]`" x-model="cost.from_copy" aria-label="Exemplaire à partir duquel ce prix s'applique" class="form-input mt-0 w-20">
+                    <span class="text-sm text-zinc-500">e exemplaire</span>
                     <button type="button" class="link text-sm" @click="costs.splice(index, 1)" x-show="costs.length > 1">Retirer</button>
                 </div>
             </template>
         </div>
-        <button type="button" class="btn-secondary mt-2" @click="costs.push({ model_count: '', points: '' })">Ajouter un palier</button>
+        <button type="button" class="btn-secondary mt-2" @click="costs.push({ model_count: '', from_copy: 1, points: '' })">Ajouter un palier</button>
+        <p class="form-help">Seuils de réquisition (11e édition) : un palier « dès le 3e exemplaire » remplace le prix de base à partir de la 3e unité identique de la liste.</p>
+        @error('costs')
+            <p class="form-error">{{ $message }}</p>
+        @enderror
         @foreach ($errors->get('costs.*') as $messages)
             @foreach ($messages as $message)
                 <p class="form-error">{{ $message }}</p>
