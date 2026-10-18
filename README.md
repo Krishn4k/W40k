@@ -330,7 +330,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Filtre par pastilles des factions possédées avec leur nombre de figurines (chapitres comptés dans leur faction mère)
 - [x] Ajout rapide d'un lot (unité, quantité, statut) en tête de page, filtre conservé
 - [x] Tableau éditable sur place : − / + par statut et » pour passer une figurine au statut suivant, enregistré en arrière-plan
-- [x] Seuils de réquisition lisibles dans les listes d'unités (« 10 fig. : 85 pts · 3e+ : 95 ») et saisissables dans la fiche d une unité
+- [x] Seuils de réquisition lisibles dans les listes d'unités (« 10 fig. : 85 pts · 3e+ : 95 ») et saisissables dans la fiche d'une unité
 - [x] Thème : accent turquoise (l'ambre reste pour les avertissements), titres en Oswald, en-tête souligné
 
 ### Audit et performances
