@@ -8,10 +8,12 @@ use App\Models\ArmyList;
 use App\Models\ArmyListEntry;
 use App\Models\CollectionLot;
 use App\Models\Detachment;
+use App\Models\Enhancement;
 use App\Models\Faction;
 use App\Models\GameFormat;
 use App\Models\PointSet;
 use App\Models\Unit;
+use App\Models\UnitAttachment;
 use App\Support\ArmyListAnalysis;
 use App\Support\ArmyListTextExport;
 use App\Support\UnitSelectOptions;
@@ -30,7 +32,7 @@ class ArmyListController extends Controller
     public function index(Request $request): View
     {
         $analyses = $request->user()->armyLists()
-            ->with(['faction.parent', 'gameFormat', 'detachment'])
+            ->with(['faction.parent', 'gameFormat', 'detachments'])
             ->latest('updated_at')
             ->get()
             ->map(fn (ArmyList $armyList): ArmyListAnalysis => new ArmyListAnalysis($armyList));
@@ -47,7 +49,12 @@ class ArmyListController extends Controller
 
     public function store(ArmyListRequest $request): RedirectResponse
     {
-        $armyList = $request->user()->armyLists()->create($request->validated());
+        $armyList = DB::transaction(function () use ($request): ArmyList {
+            $armyList = $request->user()->armyLists()->create($request->safe()->except('detachment_ids'));
+            $armyList->syncDetachments($request->detachmentIds());
+
+            return $armyList;
+        });
 
         return redirect()->route('army-lists.show', $armyList)->with('status', 'Liste créée : ajoute maintenant des unités.');
     }
@@ -76,23 +83,23 @@ class ArmyListController extends Controller
     }
 
     /**
-     * Update the list; changing the detachment removes enhancements of the previous one.
+     * Update the list; unselecting a detachment removes its enhancements from the units.
      */
     public function update(ArmyListRequest $request, ArmyList $armyList): RedirectResponse
     {
         $status = 'Liste mise à jour.';
 
         DB::transaction(function () use ($request, $armyList, &$status): void {
-            $armyList->fill($request->validated());
+            $armyList->fill($request->safe()->except('detachment_ids'))->save();
+            $armyList->syncDetachments($detachmentIds = $request->detachmentIds());
 
-            if ($armyList->isDirty('detachment_id')) {
-                $removed = $armyList->entries()->whereNotNull('enhancement_id')->update(['enhancement_id' => null]);
-                if ($removed > 0) {
-                    $status .= " {$removed} optimisation(s) de l'ancien détachement retirée(s).";
-                }
+            $removed = $armyList->entries()
+                ->whereNotNull('enhancement_id')
+                ->whereDoesntHave('enhancement', fn ($query) => $query->whereIn('detachment_id', $detachmentIds))
+                ->update(['enhancement_id' => null]);
+            if ($removed > 0) {
+                $status .= " {$removed} optimisation(s) d'un détachement retiré enlevée(s).";
             }
-
-            $armyList->save();
         });
 
         return redirect()->route('army-lists.show', $armyList)->with('status', $status);
@@ -119,7 +126,18 @@ class ArmyListController extends Controller
             $copy->name = $armyList->name.' (copie)';
             $copy->save();
 
-            $copy->entries()->createMany($armyList->entries->map(fn (ArmyListEntry $entry): array => $entry->replicate(['army_list_id'])->getAttributes())->all());
+            $copy->syncDetachments($armyList->detachments->modelKeys());
+
+            $copies = $armyList->entries->load('wargear')->mapWithKeys(function (ArmyListEntry $entry) use ($copy): array {
+                $entryCopy = $copy->entries()->create($entry->replicate(['army_list_id', 'attached_to_entry_id'])->getAttributes());
+                $entryCopy->wargear()->createMany($entry->wargear->map(fn ($wargear): array => $wargear->only(['name', 'quantity']))->all());
+
+                return [$entry->id => $entryCopy];
+            });
+
+            foreach ($armyList->entries->whereNotNull('attached_to_entry_id') as $entry) {
+                $copies[$entry->id]->update(['attached_to_entry_id' => $copies->get($entry->attached_to_entry_id)?->id]);
+            }
 
             return $copy;
         });
@@ -151,26 +169,41 @@ class ArmyListController extends Controller
             'factionOptions' => $factions->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])->sort()->all(),
             'detachmentsByFaction' => $factions->mapWithKeys(fn (Faction $faction): array => [
                 $faction->id => $faction->availableDetachments()->get()
-                    ->map(fn (Detachment $detachment): array => ['id' => $detachment->id, 'name' => (string) $detachment->name])
+                    ->map(fn (Detachment $detachment): array => [
+                        'id' => $detachment->id,
+                        'name' => (string) $detachment->name,
+                        'points' => $detachment->detachment_points,
+                        'uniqueTag' => $detachment->unique_tag,
+                    ])
                     ->sortBy('name')
                     ->values()
                     ->all(),
             ])->all(),
-            'gameFormats' => GameFormat::query()->orderBy('points_limit')->get(),
+            'selectedDetachmentIds' => array_map('intval', (array) old('detachment_ids', $armyList->exists ? $armyList->detachments->modelKeys() : [])),
+            'gameFormats' => $gameFormats = GameFormat::query()->with('compositionRules')->orderBy('points_limit')->get(),
+            'detachmentPointLimits' => $gameFormats->mapWithKeys(fn (GameFormat $format): array => [
+                $format->id => $format->compositionRules->firstWhere('rule_type', 'max_detachment_points')?->parameters,
+            ])->all(),
             'pointSets' => PointSet::query()->latest('valid_from')->get(),
             'currentPointSet' => PointSet::current(),
         ];
     }
 
     /**
-     * Units, squad sizes, free lots and enhancements offered by the entry forms.
+     * Units, squad sizes, wargear, free lots, attachments and enhancements offered by the entry forms.
      *
-     * @return array{usedLotIds: list<int>, units: list<array<string, mixed>>, enhancements: list<array<string, mixed>>}
+     * @return array{usedLotIds: list<int>, units: list<array<string, mixed>>, entries: list<array<string, mixed>>, enhancements: list<array<string, mixed>>}
      */
     private function entryOptions(ArmyList $armyList, ?PointSet $pointSet): array
     {
         $units = $armyList->faction->availableUnits()
-            ->with(['faction.parent', 'keywords', 'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')])
+            ->with([
+                'faction.parent',
+                'keywords',
+                'attachments',
+                'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')->orderBy('from_copy'),
+                'wargearCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('name'),
+            ])
             ->orderByName()
             ->get();
 
@@ -190,7 +223,15 @@ class ArmyListController extends Controller
                 'legends' => $unit->isLegends(),
                 'search' => UnitSelectOptions::searchText($unit),
                 'canTakeEnhancement' => $unit->role === UnitRole::Character && ! $unit->is_epic_hero,
-                'squadSizes' => $unit->pointCosts->map(fn ($cost): array => ['modelCount' => $cost->model_count, 'points' => $cost->points])->values()->all(),
+                'canTakeUpgrade' => ! $unit->is_epic_hero,
+                'squadSizes' => $unit->pointCosts->groupBy('model_count')->map(fn ($tiers, int $modelCount): array => [
+                    'modelCount' => $modelCount,
+                    'points' => $tiers->first()->points,
+                    'laterPoints' => $tiers->count() > 1 ? $tiers->last()->points : null,
+                ])->values()->all(),
+                'wargear' => $unit->wargearCosts->map(fn ($cost): array => ['name' => $cost->name, 'points' => $cost->points])->values()->all(),
+                'bodyguardUnitIds' => $unit->attachments->pluck('bodyguard_unit_id')->values()->all(),
+                'isSupport' => $unit->attachments->contains('kind', UnitAttachment::SUPPORT),
                 'lots' => $lotsByPlayedUnit->get($unit->id, collect())->map(fn (CollectionLot $lot): array => [
                     'id' => $lot->id,
                     'name' => trim($lot->unit->name.' '.($lot->label ? "— {$lot->label}" : '')),
@@ -198,19 +239,26 @@ class ArmyListController extends Controller
                     'quantity' => $lot->quantity,
                 ])->values()->all(),
             ])->values()->all(),
-            'enhancements' => $armyList->detachment
-                ? $armyList->detachment->enhancements()
-                    ->with(['pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)])
-                    ->get()
-                    ->map(fn ($enhancement): array => [
-                        'id' => $enhancement->id,
-                        'name' => (string) $enhancement->name,
-                        'points' => (int) $enhancement->pointCosts->first()?->points,
-                    ])
-                    ->sortBy('name')
-                    ->values()
-                    ->all()
-                : [],
+            'entries' => $armyList->entries->map(fn (ArmyListEntry $entry): array => [
+                'id' => $entry->id,
+                'unitId' => $entry->unit_id,
+                'name' => $entry->unit->name.($entry->model_count > 1 ? " ×{$entry->model_count}" : ''),
+                'isAttached' => $entry->attached_to_entry_id !== null,
+            ])->values()->all(),
+            'enhancements' => Enhancement::query()
+                ->whereIn('detachment_id', $armyList->detachments->modelKeys())
+                ->with(['detachment', 'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)])
+                ->get()
+                ->map(fn (Enhancement $enhancement): array => [
+                    'id' => $enhancement->id,
+                    'name' => (string) $enhancement->name,
+                    'detachment' => (string) $enhancement->detachment->name,
+                    'isUpgrade' => $enhancement->is_upgrade,
+                    'points' => (int) $enhancement->pointCosts->first()?->points,
+                ])
+                ->sortBy(['detachment', 'name'])
+                ->values()
+                ->all(),
         ];
     }
 }

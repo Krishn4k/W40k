@@ -166,7 +166,7 @@ class BsDataImportTest extends TestCase
             'raw.example.test/*' => fn ($request) => Http::response(File::get($this->fixtures.'/'.rawurldecode(basename($request->url())))),
         ]);
 
-        $this->artisan('bsdata:import')
+        $this->artisan('bsdata:import', ['--without-mfm' => true])
             ->expectsOutputToContain('7 fichier(s) téléchargé(s).')
             ->expectsOutputToContain('Points enregistrés dans la version « BSData Warhammer 40,000 10th Edition (rév. 42) ».')
             ->assertSuccessful();

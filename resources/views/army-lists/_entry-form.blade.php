@@ -15,6 +15,9 @@
           'modelCount' => $value('model_count', $entry?->model_count),
           'enhancementId' => $value('enhancement_id', $entry?->enhancement_id),
           'lotId' => $value('collection_lot_id', $entry?->collection_lot_id),
+          'entryId' => $entry?->id,
+          'attachedToEntryId' => $value('attached_to_entry_id', $entry?->attached_to_entry_id),
+          'wargear' => (object) $value('wargear', $entry?->wargear->pluck('quantity', 'name')->all() ?? []),
           'isWarlord' => (bool) $value('is_warlord', $entry?->is_warlord),
       ]))"
       class="flex flex-col gap-4">
@@ -51,7 +54,7 @@
             <template x-if="squadSizes.length > 0">
                 <select id="model_count_{{ $formId }}" name="model_count" x-model.number="modelCount" class="form-input">
                     <template x-for="size in squadSizes" :key="size.modelCount">
-                        <option :value="size.modelCount" :selected="size.modelCount === Number(modelCount)" x-text="`${size.modelCount} fig. — ${size.points} pts`"></option>
+                        <option :value="size.modelCount" :selected="size.modelCount === Number(modelCount)" x-text="`${size.modelCount} fig. — ${size.points} pts` + (size.laterPoints ? ` (exemplaires suivants : ${size.laterPoints} pts)` : '')"></option>
                     </template>
                 </select>
             </template>
@@ -72,15 +75,34 @@
     </div>
 
     <div class="flex flex-wrap items-end gap-4">
-        <div x-show="canTakeEnhancement && options.enhancements.length > 0" class="min-w-64">
+        <div x-show="enhancements.length > 0" class="min-w-64">
             <label class="form-label" for="enhancement_{{ $formId }}">Optimisation</label>
             <select id="enhancement_{{ $formId }}" name="enhancement_id" x-model="enhancementId" class="form-input">
                 <option value="">Aucune</option>
-                <template x-for="enhancement in options.enhancements" :key="enhancement.id">
-                    <option :value="enhancement.id" :selected="enhancement.id === Number(enhancementId)" x-text="`${enhancement.name} (+${enhancement.points} pts)`"></option>
+                <template x-for="enhancement in enhancements" :key="enhancement.id">
+                    <option :value="enhancement.id" :selected="enhancement.id === Number(enhancementId)"
+                            x-text="`${enhancement.name}${enhancement.isUpgrade ? ' [Upgrade]' : ''} (+${enhancement.points} pts) — ${enhancement.detachment}`"></option>
                 </template>
             </select>
         </div>
+
+        <div x-show="bodyguards.length > 0" class="min-w-64">
+            <label class="form-label" for="attached_{{ $formId }}">Rattachée à</label>
+            <select id="attached_{{ $formId }}" name="attached_to_entry_id" x-model="attachedToEntryId" class="form-input">
+                <option value="" x-text="unit?.isSupport ? 'À rattacher (obligatoire pour une unité Support)' : 'Aucune (unité indépendante)'"></option>
+                <template x-for="bodyguard in bodyguards" :key="bodyguard.id">
+                    <option :value="bodyguard.id" :selected="bodyguard.id === Number(attachedToEntryId)" x-text="bodyguard.name"></option>
+                </template>
+            </select>
+        </div>
+
+        <template x-for="item in wargearOptions" :key="item.name">
+            <div class="w-40">
+                <label class="form-label" :for="`wargear_{{ $formId }}_${item.name}`" x-text="`${item.name} (+${item.points} pts)`"></label>
+                <input type="number" min="0" max="20" :id="`wargear_{{ $formId }}_${item.name}`" :name="`wargear[${item.name}]`"
+                       x-model.number="wargear[item.name]" placeholder="0" class="form-input">
+            </div>
+        </template>
 
         <input type="hidden" name="is_warlord" value="0">
         <label class="flex items-center gap-2 pb-2 text-sm">
@@ -91,9 +113,9 @@
         <button type="submit" class="btn-primary">{{ $entry ? 'Enregistrer' : 'Ajouter à la liste' }}</button>
     </div>
 
-    @if ($isSubmittedForm && $errors->hasAny(['unit_id', 'model_count', 'enhancement_id', 'collection_lot_id', 'is_warlord']))
+    @if ($isSubmittedForm && $errors->hasAny(['unit_id', 'model_count', 'enhancement_id', 'attached_to_entry_id', 'wargear', 'collection_lot_id', 'is_warlord']))
         <div class="form-error">
-            @foreach (['unit_id', 'model_count', 'enhancement_id', 'collection_lot_id', 'is_warlord'] as $field)
+            @foreach (['unit_id', 'model_count', 'enhancement_id', 'attached_to_entry_id', 'wargear', 'collection_lot_id', 'is_warlord'] as $field)
                 @foreach ($errors->get($field) as $message)
                     <p>{{ $message }}</p>
                 @endforeach

@@ -25,7 +25,6 @@ class ArmyListFactory extends Factory
             'user_id' => User::factory(),
             'name' => Str::title(fake()->words(3, true)),
             'faction_id' => Faction::factory(),
-            'detachment_id' => null,
             'game_format_id' => GameFormat::factory(),
             'point_set_id' => null,
             'notes' => null,

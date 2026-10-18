@@ -23,7 +23,7 @@ class DatabaseSeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertSame(3, GameFormat::count());
-        $this->assertSame(18, CompositionRule::count());
+        $this->assertSame(41, CompositionRule::count());
         $this->assertTrue(User::query()->where('email', 'test@example.com')->exists());
         $this->assertSame(0, Faction::count(), 'Reference data comes from the BSData import.');
     }
@@ -49,7 +49,7 @@ class DatabaseSeederTest extends TestCase
 
         $this->assertSame(2, Faction::count());
         $this->assertSame(3, GameFormat::count());
-        $this->assertSame(18, CompositionRule::count());
+        $this->assertSame(41, CompositionRule::count());
         $this->assertSame(1, User::count());
     }
 }

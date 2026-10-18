@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['bsdata_id', 'faction_id', 'name'])]
+#[Fillable(['bsdata_id', 'faction_id', 'name', 'detachment_points', 'unique_tag', 'force_dispositions'])]
 class Detachment extends Model
 {
     /** @use HasFactory<DetachmentFactory> */
@@ -27,6 +28,8 @@ class Detachment extends Model
     {
         return [
             'name' => LocalizedText::class,
+            'detachment_points' => 'integer',
+            'force_dispositions' => 'array',
         ];
     }
 
@@ -47,11 +50,13 @@ class Detachment extends Model
     }
 
     /**
-     * @return HasMany<ArmyList, $this>
+     * Army lists that selected this detachment.
+     *
+     * @return BelongsToMany<ArmyList, $this>
      */
-    public function armyLists(): HasMany
+    public function armyLists(): BelongsToMany
     {
-        return $this->hasMany(ArmyList::class);
+        return $this->belongsToMany(ArmyList::class, 'army_list_detachments');
     }
 
     /**

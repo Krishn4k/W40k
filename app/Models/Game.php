@@ -84,7 +84,7 @@ class Game extends Model
     }
 
     /**
-     * Copy the list's name, faction, detachment, points and text export into the game.
+     * Copy the list's name, faction, main (first) detachment, points and text export into the game.
      */
     public function snapshotArmyList(ArmyList $armyList): void
     {
@@ -94,7 +94,7 @@ class Game extends Model
             'army_list_id' => $armyList->id,
             'list_name' => $armyList->name,
             'faction_id' => $armyList->faction_id,
-            'detachment_id' => $armyList->detachment_id,
+            'detachment_id' => $armyList->detachments()->value('detachments.id'),
             'list_points' => $analysis->totalPoints(),
             'list_snapshot' => (new ArmyListTextExport($analysis))->render(),
         ]);

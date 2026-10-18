@@ -31,7 +31,8 @@ class ArmyListRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'faction_id' => ['required', 'integer', Rule::exists('factions', 'id')],
-            'detachment_id' => ['nullable', 'integer'],
+            'detachment_ids' => ['nullable', 'array', 'max:10'],
+            'detachment_ids.*' => ['integer', 'distinct'],
             'game_format_id' => ['required', 'integer', Rule::exists('game_formats', 'id')],
             'point_set_id' => ['nullable', 'integer', Rule::exists('point_sets', 'id')],
             'notes' => ['nullable', 'string', 'max:5000'],
@@ -51,8 +52,9 @@ class ArmyListRequest extends FormRequest
 
                 $faction = Faction::find($this->integer('faction_id'));
 
-                if ($this->filled('detachment_id') && ! $faction->availableDetachments()->whereKey($this->integer('detachment_id'))->exists()) {
-                    $validator->errors()->add('detachment_id', 'Ce détachement n\'est pas disponible pour cette faction.');
+                $detachmentIds = $this->detachmentIds();
+                if ($faction->availableDetachments()->whereKey($detachmentIds)->count() !== count($detachmentIds)) {
+                    $validator->errors()->add('detachment_ids', 'Un des détachements choisis n\'est pas disponible pour cette faction.');
                 }
 
                 /** @var ArmyList|null $armyList */
@@ -62,5 +64,15 @@ class ArmyListRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    /**
+     * Selected detachments, in the order they were ticked.
+     *
+     * @return list<int>
+     */
+    public function detachmentIds(): array
+    {
+        return array_values(array_unique(array_map('intval', (array) $this->input('detachment_ids', []))));
     }
 }

@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Support\BsData\BsDataDownloader;
 use App\Support\BsData\BsDataImporter;
 use App\Support\BsData\BsDataLibrary;
+use App\Support\Mfm\MfmDownloader;
+use App\Support\Mfm\MfmImporter;
 use App\Support\ReferenceTranslations;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -14,8 +16,9 @@ use Throwable;
 #[Signature('bsdata:import
     {--offline : Utilise les fichiers déjà téléchargés au lieu de les télécharger}
     {--prune : Supprime les données de référence de test inutilisées (hors BSData)}
-    {--without-translations : N\'applique pas le fichier de traductions françaises après l\'import}')]
-#[Description('Télécharge les catalogues BSData et importe factions, unités, points, détachements et optimisations')]
+    {--without-translations : N\'applique pas le fichier de traductions françaises après l\'import}
+    {--without-mfm : N\'applique pas les points officiels du Munitorum Field Manual après l\'import}')]
+#[Description('Télécharge les catalogues BSData et le Munitorum Field Manual, puis importe factions, unités, points, détachements et optimisations')]
 class ImportBsData extends Command
 {
     /**
@@ -38,6 +41,18 @@ class ImportBsData extends Command
 
             $this->info('Import…');
             $result = (new BsDataImporter($library))->import($this->option('prune'));
+
+            $mfmResult = null;
+            if (! $this->option('without-mfm')) {
+                if (! $this->option('offline')) {
+                    $this->info('Téléchargement du Munitorum Field Manual depuis '.config('bsdata.mfm_repository').'…');
+                    $this->line(count(MfmDownloader::fromConfig()->download()).' fichier(s) téléchargé(s).');
+                }
+
+                $this->info('Application des points officiels (MFM)…');
+                $mfmResult = MfmImporter::fromConfig()->import($result['pointSet']);
+                $result['pointSet']->refresh();
+            }
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
 
@@ -65,6 +80,33 @@ class ImportBsData extends Command
 
         foreach ($result['warnings'] as $warning) {
             $this->warn($warning);
+        }
+
+        if ($mfmResult !== null) {
+            $mfmLabels = [
+                'factions' => 'Factions MFM',
+                'units' => 'Unités aux points officiels',
+                'unmatchedUnits' => 'Unités MFM introuvables',
+                'wargearCosts' => "Coûts d'équipement",
+                'attachments' => 'Rattachements Leader / Support',
+                'detachments' => 'Détachements (DP, tag Unique)',
+                'createdDetachments' => 'Détachements ajoutés',
+                'enhancements' => 'Optimisations aux points officiels',
+                'createdEnhancements' => 'Optimisations ajoutées',
+            ];
+
+            $this->table(['Munitorum Field Manual', 'Nombre'], collect($mfmLabels)
+                ->filter(fn (string $label, string $key): bool => isset($mfmResult['counts'][$key]))
+                ->map(fn (string $label, string $key): array => [$label, $mfmResult['counts'][$key]])
+                ->values()
+                ->all());
+
+            foreach ($mfmResult['warnings'] as $warning) {
+                $this->warn($warning, verbosity: 'v');
+            }
+            if ($mfmResult['warnings'] !== []) {
+                $this->line(count($mfmResult['warnings']).' avertissement(s) MFM (détail avec -v).');
+            }
         }
 
         $this->info("Points enregistrés dans la version « {$result['pointSet']->name} ».");

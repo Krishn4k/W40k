@@ -67,10 +67,11 @@ final class BsDataImporter
 
         DB::transaction(function () use ($gameSystem, $prune): void {
             $revision = $gameSystem->xpath->document->documentElement->getAttribute('revision');
-            $this->pointSet = PointSet::firstOrCreate(
-                ['name' => "BSData {$gameSystem->name} (rév. {$revision})"],
-                ['valid_from' => today()],
-            );
+            $name = "BSData {$gameSystem->name} (rév. {$revision})";
+            $this->pointSet = PointSet::query()
+                ->where('name', $name)
+                ->orWhere('name', 'like', addcslashes($name, '\\%_').' · MFM %')
+                ->first() ?? PointSet::create(['name' => $name, 'valid_from' => today()]);
 
             $catalogues = $this->orderedFactionCatalogues();
 

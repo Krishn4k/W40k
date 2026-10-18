@@ -20,7 +20,7 @@
                     <div>
                         <a href="{{ route('army-lists.show', $armyList) }}" class="link text-lg font-semibold">{{ $armyList->name }}</a>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">
-                            {{ $armyList->faction->fullName() }}@if ($armyList->detachment) · {{ $armyList->detachment->name }}@endif
+                            {{ $armyList->faction->fullName() }}@if ($armyList->detachments->isNotEmpty()) · {{ $armyList->detachmentNames() }}@endif
                         </p>
                     </div>
                     <p class="text-2xl font-semibold">

@@ -1,0 +1,51 @@
+name: Space Marines
+slug: space-marines
+version: "1.5"
+firstSeen: 2026-09-30
+detachments:
+  - name: Gladius Task Force
+    dp: 3
+    objectives:
+      - TAKE AND HOLD
+      - PRIORITY ASSETS
+    enhancements:
+      - { name: Artificer Armour, points: 15 }
+      - { name: Laurels of Triumph, points: 20 }
+  - name: Ironstorm Spearhead
+    dp: 1
+    objectives:
+      - PURGE THE FOE
+    unique: Ironstorm
+    enhancements:
+      - { name: Gunnery Honours (Upgrade), points: 15 }
+units:
+  - name: Captain
+    pricing:
+      - range: "[1,)"
+        label: Your Unit Costs
+        costs:
+          - { models: 1, points: 85 }
+    wargear:
+      - { item: Relic Shield, points: 5 }
+    leaderTo:
+      - Intercessor Squad
+      - Unknown Squad
+  - name: intercessor squad
+    pricing:
+      - range: "[1,2]"
+        label: Your 1st To 2nd Units Cost
+        costs:
+          - { models: 5, points: 75 }
+          - { models: 10, points: 150 }
+      - range: "[3,)"
+        label: Your 3rd + Unit Costs
+        costs:
+          - { models: 5, points: 85 }
+          - { models: 10, points: 170 }
+  - name: Thunderhawk Gunship
+    legends: true
+    pricing:
+      - range: "[1,)"
+        label: Your Unit Costs
+        costs:
+          - { models: 1, points: 840 }

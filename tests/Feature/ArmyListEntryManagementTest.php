@@ -39,10 +39,8 @@ class ArmyListEntryManagementTest extends TestCase
         $this->user = User::factory()->create();
         $this->pointSet = PointSet::factory()->create();
         $this->faction = Faction::factory()->create();
-        $this->armyList = ArmyList::factory()->for($this->user)->create([
-            'faction_id' => $this->faction->id,
-            'detachment_id' => Detachment::factory()->for($this->faction)->create()->id,
-        ]);
+        $this->armyList = ArmyList::factory()->for($this->user)->create(['faction_id' => $this->faction->id]);
+        $this->armyList->syncDetachments([Detachment::factory()->for($this->faction)->create()->id]);
         $this->intercessors = $this->unit(UnitRole::Battleline, [5 => 80, 10 => 160]);
     }
 
@@ -56,10 +54,12 @@ class ArmyListEntryManagementTest extends TestCase
         $response->assertRedirect(route('army-lists.show', $this->armyList))->assertSessionHasNoErrors();
         $this->assertSame(10, $this->armyList->entries()->sole()->model_count);
 
-        $this->actingAs($this->user)->get(route('army-lists.show', $this->armyList))
+        $page = $this->actingAs($this->user)->get(route('army-lists.show', $this->armyList))
             ->assertOk()
             ->assertSee('160 pts')
             ->assertSee('Aucun lot de la collection affecté.');
+
+        $this->assertSame(1, substr_count($page->getContent(), 'name="_method" value="PUT"'), 'Only the edit form of the existing unit uses PUT, not the add form.');
     }
 
     public function test_the_squad_size_must_exist_in_the_point_set(): void
@@ -147,6 +147,66 @@ class ArmyListEntryManagementTest extends TestCase
             'model_count' => 5,
             'collection_lot_id' => $proxyLot->id,
         ])->assertSessionHasNoErrors();
+    }
+
+    public function test_an_enhancement_of_any_selected_detachment_can_be_taken(): void
+    {
+        $captain = $this->unit(UnitRole::Character, [1 => 80]);
+        $second = Detachment::factory()->for($this->faction)->create();
+        $this->armyList->syncDetachments([...$this->armyList->detachments->modelKeys(), $second->id]);
+
+        $this->actingAs($this->user)->post(route('army-lists.entries.store', $this->armyList), [
+            'unit_id' => $captain->id,
+            'model_count' => 1,
+            'enhancement_id' => Enhancement::factory()->for($second)->create()->id,
+        ])->assertSessionHasNoErrors();
+    }
+
+    public function test_a_leader_is_attached_with_its_paid_wargear(): void
+    {
+        $captain = $this->unit(UnitRole::Character, [1 => 80]);
+        $captain->wargearCosts()->create(['point_set_id' => $this->pointSet->id, 'name' => 'Relic Shield', 'points' => 5]);
+        $squad = ArmyListEntry::factory()->for($this->armyList)->for($this->intercessors)->create(['model_count' => 5]);
+
+        $this->actingAs($this->user)->post(route('army-lists.entries.store', $this->armyList), [
+            'unit_id' => $captain->id,
+            'model_count' => 1,
+            'attached_to_entry_id' => $squad->id,
+            'wargear' => ['Relic Shield' => 1],
+        ])->assertSessionHasNoErrors();
+
+        $leader = $this->armyList->entries()->where('unit_id', $captain->id)->sole();
+        $this->assertSame($squad->id, $leader->attached_to_entry_id);
+        $this->assertSame(['Relic Shield' => 1], $leader->wargear()->pluck('quantity', 'name')->all());
+
+        $this->actingAs($this->user)->put(route('army-lists.entries.update', [$this->armyList, $leader]), [
+            'unit_id' => $captain->id,
+            'model_count' => 1,
+            'wargear' => ['Relic Shield' => 0],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull($leader->fresh()->attached_to_entry_id);
+        $this->assertSame(0, $leader->wargear()->count());
+    }
+
+    public function test_unknown_wargear_and_invalid_attachments_are_refused(): void
+    {
+        $captain = $this->unit(UnitRole::Character, [1 => 80]);
+        $squad = ArmyListEntry::factory()->for($this->armyList)->for($this->intercessors)->create(['model_count' => 5]);
+        $attached = ArmyListEntry::factory()->for($this->armyList)->for($captain)->create(['model_count' => 1, 'attached_to_entry_id' => $squad->id]);
+        $foreign = ArmyListEntry::factory()->create();
+
+        $post = fn (array $data) => $this->actingAs($this->user)->post(route('army-lists.entries.store', $this->armyList), ['unit_id' => $captain->id, 'model_count' => 1, ...$data]);
+
+        $post(['wargear' => ['Thunder Hammer' => 1]])->assertSessionHasErrors('wargear');
+        $post(['attached_to_entry_id' => $attached->id])->assertSessionHasErrors('attached_to_entry_id');
+        $post(['attached_to_entry_id' => $foreign->id])->assertSessionHasErrors('attached_to_entry_id');
+
+        $this->actingAs($this->user)->put(route('army-lists.entries.update', [$this->armyList, $attached]), [
+            'unit_id' => $captain->id,
+            'model_count' => 1,
+            'attached_to_entry_id' => $attached->id,
+        ])->assertSessionHasErrors('attached_to_entry_id');
     }
 
     public function test_the_enhancement_must_come_from_the_list_detachment(): void

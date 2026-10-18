@@ -57,8 +57,12 @@ npm run build
 > `--seed` charge les formats de jeu, leurs règles de composition et un utilisateur `test@example.com`
 > (mot de passe `password`).
 > `bsdata:import` télécharge les catalogues BSData (≈ 36 Mo, dans `storage/app/bsdata`, non versionné) et
-> importe factions, unités, points, détachements et optimisations (≈ 30 s). À relancer à chaque mise à jour
-> BSData ; `--offline` réutilise les fichiers déjà téléchargés. Il applique ensuite les noms français de
+> importe factions, unités, points, détachements et optimisations (≈ 30 s). Il télécharge ensuite le
+> Munitorum Field Manual (YAML de `BSData/wh40k-11e-mfm`, dans `storage/app/mfm`) et applique les points
+> officiels V11 : paliers par rang d'exemplaire, coûts d'équipement, DP et tags « Unique » des détachements,
+> Upgrades, rattachements Leader / Support (`--without-mfm` pour s'en passer, `-v` pour le détail des
+> unités non trouvées). À relancer à chaque mise à jour BSData ou MFM ; `--offline` réutilise les fichiers
+> déjà téléchargés. Il applique ensuite les noms français de
 > `database/translations/fr.csv` (voir « Traductions » ci-dessous).
 > Créer son propre compte administrateur : `php artisan app:create-user --admin`. Les joueurs suivants
 > s'inscrivent par un lien d'invitation créé dans Administration (pas d'inscription publique).
@@ -117,6 +121,11 @@ erDiagram
     units ||--o{ army_list_entries : ""
     collection_lots |o--o{ army_list_entries : "lot affecté"
     enhancements |o--o{ army_list_entries : ""
+    army_lists }o--o{ detachments : "army_list_detachments"
+    army_list_entries |o--o{ army_list_entries : "attached_to_entry_id (Leader / Support)"
+    army_list_entries ||--o{ army_list_entry_wargear : ""
+    units ||--o{ unit_wargear_costs : ""
+    units ||--o{ unit_attachments : "leader_unit_id / bodyguard_unit_id"
     users ||--o{ games : ""
     army_lists |o--o{ games : "copie au moment de la partie"
     factions |o--o{ games : "faction jouée / adverse"
@@ -127,12 +136,14 @@ erDiagram
 | Table | Colonnes clés |
 |---|---|
 | `factions` | `parent_id` (nullable : sous-faction), `slug`, `name` |
-| `detachments` | `faction_id`, `name` |
+| `detachments` | `faction_id`, `name`, `detachment_points` (DP), `unique_tag`, `force_dispositions` (JSON) |
 | `units` | `faction_id`, `name`, `role` (Character, Battleline…), `is_epic_hero` |
 | `keywords` + `keyword_unit` | Mots-clés (Infantry, Terminator…), table pivot |
 | `point_sets` | `name` (ex. « MFM 2026 v1 »), `valid_from`, `valid_to` |
-| `unit_point_costs` | `unit_id`, `point_set_id`, `model_count`, `points` (un palier par ligne) |
-| `enhancements` | `detachment_id`, `name` |
+| `unit_point_costs` | `unit_id`, `point_set_id`, `model_count`, `from_copy` (rang d'exemplaire à partir duquel le prix s'applique), `points` |
+| `unit_wargear_costs` | `unit_id`, `point_set_id`, `name`, `points` (par objet pris) |
+| `unit_attachments` | `leader_unit_id`, `bodyguard_unit_id`, `kind` (`leader` / `support`) |
+| `enhancements` | `detachment_id`, `name`, `is_upgrade` |
 | `enhancement_point_costs` | `enhancement_id`, `point_set_id`, `points` |
 | `game_formats` | `name` (Incursion, Strike Force, Onslaught), `points_limit` |
 | `composition_rules` | `scope_type` + `scope_id` (format, faction, détachement), `rule_type`, `parameters` (JSON), `message` |
@@ -148,8 +159,10 @@ L'anglais est la langue de référence, et une autre langue s'ajoute sans migrat
 | `collection_lots` | `user_id`, `unit_id`, `counts_as_unit_id` (proxy, nullable), `label`, `quantity`, `notes` |
 | `lot_status_counts` | `collection_lot_id`, `status`, `count` (somme des `count` = `quantity`) |
 | `lot_photos` | `collection_lot_id`, `path`, `caption`, `position` |
-| `army_lists` | `user_id`, `name`, `faction_id`, `detachment_id`, `game_format_id`, `point_set_id` (nullable = version en vigueur) |
-| `army_list_entries` | `army_list_id`, `unit_id`, `model_count`, `collection_lot_id` (nullable, unique par liste), `enhancement_id`, `is_warlord`, `position` |
+| `army_lists` | `user_id`, `name`, `faction_id`, `game_format_id`, `point_set_id` (nullable = version en vigueur) |
+| `army_list_detachments` | `army_list_id`, `detachment_id`, `position` (11e édition : plusieurs détachements) |
+| `army_list_entries` | `army_list_id`, `unit_id`, `model_count`, `collection_lot_id` (nullable, unique par liste), `enhancement_id`, `attached_to_entry_id` (Leader / Support rattaché), `is_warlord`, `position` |
+| `army_list_entry_wargear` | `army_list_entry_id`, `name`, `quantity` (équipement payant) |
 
 Statuts de peinture, dans l'ordre :
 
@@ -167,11 +180,24 @@ Les règles de portée faction (et faction mère) ou détachement s'appliquent a
 | `rule_type` | Paramètres | Règle |
 |---|---|---|
 | `max_points` | — | Total ≤ `points_limit` du format |
+| `requires_detachment` | — | Au moins un détachement |
+| `max_detachment_points` | `max`, `single_max` | DP dépensés ≤ `max`, sauf un détachement seul jusqu'à `single_max` (Incursion : un détachement à 3 DP) |
+| `unique_detachment_tags` | — | Pas deux détachements avec le même tag « Unique » |
 | `max_unit_copies` | `default`, `battleline`, `dedicated_transport`, `epic_hero` | Nombre maximal d'exemplaires d'une même unité selon son rôle |
-| `max_enhancements` | `max` | Nombre maximal d'optimisations |
-| `unique_enhancements` | — | Chaque optimisation au plus une fois |
-| `enhancement_requires_character` | — | Optimisations réservées aux Personnages non Héros épiques |
+| `max_enhancements` | `max` | Nombre maximal d'optimisations (les 2e et 3e exemplaires d'une Upgrade ne comptent pas) |
+| `enhancement_from_detachments` | — | Optimisations issues des détachements choisis |
+| `unique_enhancements` | — | Chaque optimisation au plus une fois (hors Upgrades) |
+| `max_upgrade_copies` | `max` | Même Upgrade au plus `max` fois (3) |
+| `enhancement_requires_character` | — | Optimisations réservées aux Personnages non Héros épiques (Upgrades : toute unité non Héros épique) |
+| `one_enhancement_per_attached_unit` | — | Une seule optimisation par unité, unités rattachées comprises |
+| `support_must_be_attached` | — | Toute unité Support est rattachée à un garde du corps |
+| `valid_attachment` | — | Rattachement autorisé par le MFM, un Leader et un Support au plus par garde du corps |
 | `requires_warlord` | — | Exactement un Seigneur de guerre, de rôle Personnage |
+
+Limites par format (MFM 1.5) : Incursion 1 000 pts, 2 DP (ou un détachement à 3 DP), 2 optimisations,
+2 exemplaires par unité ; Strike Force 2 000 pts, 3 DP, 4 optimisations, 3 exemplaires. Battleline et
+Dedicated Transport : le double ; Héros épique : 1. Le prix d'une unité dépend de son rang d'exemplaire
+dans la liste (seuils de réquisition, ex. « 3e + : 110 pts »), dans l'ordre d'affichage.
 
 La portée polymorphe (`scope_type`) utilise des alias (`faction`, `detachment`, `game_format`)
 déclarés dans `AppServiceProvider`, jamais les noms de classes.
@@ -269,7 +295,16 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Factions et sous-factions (chapitres Space Marines), unités, rôles, mots-clés
 - [x] Points par taille d'escouade (paliers déduits des modificateurs BSData), détachements et optimisations
   (groupées par détachement, ou en liste à plat conditionnée par le détachement comme chez les Necrons)
-- [ ] Règles de composition issues de BSData (aujourd'hui : 6 règles de base saisies à la main)
+- [ ] Règles de composition issues de BSData (aujourd'hui : règles de base saisies dans le seeder)
+### Passage à la 11e édition (MFM officiel + BSData)
+- [x] Import BSData V11 (format JSON, dépôt `BSData/wh40k-11e`)
+- [x] Import du Munitorum Field Manual 1.5 : points par taille et rang d'exemplaire, équipement payant,
+  détachements (DP, tag Unique, dispositions de force), optimisations et Upgrades, rattachements Leader / Support
+- [x] Listes à plusieurs détachements (compteur de DP, tags Unique signalés dans le formulaire)
+- [x] Règles V11 : DP, tags Unique, limites par format, Upgrades, Leader / Support, une optimisation par unité rattachée
+- [x] Formulaire d'unité : optimisations de tous les détachements choisis, Upgrades pour les non-Personnages,
+  rattachement à une unité de la liste, quantités d'équipement payant
+- [ ] Limites officielles V11 du format Onslaught (absentes du MFM 1.5 : reprises de Strike Force, sans limite de DP)
 ### Phase 6 : Authentification multi-utilisateur
 - [x] Rôle administrateur (`is_admin`), référentiel modifiable par les admins seulement, lecture pour tous
 - [x] Inscription par lien d'invitation à usage unique (7 jours), révocable
@@ -347,12 +382,20 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Unités [Legends] masquées par défaut (case « Légendes » pour les afficher) ; une unité déjà choisie reste visible | 390 unités sur 1 495 sont hors format compétitif ; elles encombraient les listes. Repérées par « [Legends] » dans le nom anglais, sans colonne dédiée. |
 | 2026-10-18 | Listes déroulantes d'unités filtrées côté navigateur (Alpine), recherche sans accents sur les noms FR et EN | Réponse immédiate sans rechargement ; ~1 500 unités restent légères à transmettre. |
 | 2026-10-18 | Traductions sorties de l'administration vers un menu dédié (vue d'ensemble + liste de travail), validation en masse par cases à cocher | Relire 3 500 noms faction par faction demande de voir le reste à faire et de valider vite ; la sélection reste explicite. |
+| 2026-10-18 | Passage en 11e édition : MFM officiel (YAML) appliqué après BSData, dans la même version de points (« … · MFM 1.5 ») | Les détachements BSData V11 sont incomplets ; le MFM est la référence des points, DP et Upgrades. BSData reste la source des unités et mots-clés. |
+| 2026-10-18 | Appariement MFM ↔ référentiel par nom anglais normalisé (casse, apostrophes, pluriel, [Legends]), d'abord dans la lignée de la faction | Le MFM n'a pas d'identifiant BSData ; détachements et optimisations absents sont créés, les unités introuvables signalées. |
+| 2026-10-18 | Plusieurs détachements par liste (table pivot), la partie garde le premier comme détachement principal | Règle V11 ; les statistiques par détachement restent simples. |
+| 2026-10-18 | Prix par rang d'exemplaire (`from_copy`) calculé dans l'ordre de la liste | Reproduit les seuils de réquisition sans stocker de prix figé. |
+| 2026-10-18 | Règles V11 non bloquantes (rapport d'analyse), seules les contraintes dures (disponibilité, rattachement dans la liste, équipement connu) sont validées | Même principe que les règles existantes : un brouillon peut être non conforme. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
 
-- Moteur de contraintes : 6 types de règles de base ; pas encore d'écran pour saisir des règles
-  de faction ou de détachement (seeders uniquement). Rattachement Leader/Bodyguard non géré.
+- Moteur de contraintes : pas encore d'écran pour saisir des règles de faction ou de détachement (seeders
+  uniquement). Les unités qui doivent être Seigneur de guerre et les règles de détachement ne sont pas gérées.
+- MFM 1.5 : 32 unités non appariées (noms différents de BSData : Custodes « Custodian Guard », Sicaran,
+  Tarantula, Termite, Titans du Chaos, X-101…) : elles gardent leurs points BSData. Des détachements BSData
+  absents du MFM restent sans DP. Format Onslaught sans limites officielles V11.
 - Import BSData : noms en anglais uniquement (traduction FR à saisir) ; 5 unités sans coût (sous-unités
   de Tyranides, fortifications Legends) ; 11 modificateurs de coût ignorés car liés à autre chose que le
   nombre de figurines ; optimisations « Recon Elements » (Astra Militarum) sans détachement correspondant ;

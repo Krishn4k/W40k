@@ -6,10 +6,14 @@ use App\Enums\PaintStatus;
 use App\Enums\UnitRole;
 use App\Models\ArmyList;
 use App\Models\ArmyListEntry;
+use App\Models\ArmyListEntryWargear;
 use App\Models\CompositionRule;
+use App\Models\Detachment;
 use App\Models\EnhancementPointCost;
 use App\Models\PointSet;
+use App\Models\UnitAttachment;
 use App\Models\UnitPointCost;
+use App\Models\UnitWargearCost;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -17,6 +21,8 @@ use Illuminate\Support\Collection;
  * Computes an army list's points, checks its composition rules and its playability with the owner's collection.
  *
  * Nothing is stored: every figure is recomputed from the list's entries and the point set in use.
+ * Unit costs follow the 11th edition requisition thresholds: the nth copy of a unit (in list order)
+ * pays the tier whose first copy rank is the highest one not above n.
  *
  * @phpstan-type Violation array{rule_type: string, message: string, details: list<string>}
  * @phpstan-type Playability array{status: 'ok'|'no_lot'|'not_ready'|'mismatch', ready: int, missing: int, message: string}
@@ -26,7 +32,7 @@ final class ArmyListAnalysis
     public readonly ?PointSet $pointSet;
 
     /**
-     * @var Collection<string, UnitPointCost> Unit costs keyed by "unit_id:model_count".
+     * @var Collection<string, Collection<int, UnitPointCost>> Unit cost tiers keyed by "unit_id:model_count", by descending first copy.
      */
     private Collection $unitCosts;
 
@@ -34,6 +40,21 @@ final class ArmyListAnalysis
      * @var Collection<int, EnhancementPointCost> Enhancement costs keyed by enhancement id.
      */
     private Collection $enhancementCosts;
+
+    /**
+     * @var Collection<string, UnitWargearCost> Wargear costs keyed by "unit_id:name".
+     */
+    private Collection $wargearCosts;
+
+    /**
+     * @var array<int, int> Copy rank (1 for the first copy of a unit) by entry id.
+     */
+    private array $copyRanks = [];
+
+    /**
+     * @var Collection<string, string> Allowed attachment kinds keyed by "leader_unit_id:bodyguard_unit_id".
+     */
+    private Collection $attachments;
 
     /**
      * @var list<Violation>|null
@@ -45,36 +66,67 @@ final class ArmyListAnalysis
         $armyList->loadMissing([
             'user',
             'faction.parent',
-            'detachment',
+            'detachments',
             'gameFormat',
             'pointSet',
             'entries.unit',
             'entries.enhancement',
+            'entries.wargear',
+            'entries.attachedTo.unit',
             'entries.collectionLot.unit',
             'entries.collectionLot.statusCounts',
         ]);
 
         $this->pointSet = $armyList->effectivePointSet();
+        $unitIds = $armyList->entries->pluck('unit_id')->unique();
 
         $this->unitCosts = UnitPointCost::query()
             ->where('point_set_id', $this->pointSet?->id)
-            ->whereIn('unit_id', $armyList->entries->pluck('unit_id')->unique())
+            ->whereIn('unit_id', $unitIds)
+            ->orderByDesc('from_copy')
             ->get()
-            ->keyBy(fn (UnitPointCost $cost): string => $cost->unit_id.':'.$cost->model_count);
+            ->groupBy(fn (UnitPointCost $cost): string => $cost->unit_id.':'.$cost->model_count);
 
         $this->enhancementCosts = EnhancementPointCost::query()
             ->where('point_set_id', $this->pointSet?->id)
             ->whereIn('enhancement_id', $armyList->entries->pluck('enhancement_id')->filter()->unique())
             ->get()
             ->keyBy('enhancement_id');
+
+        $this->wargearCosts = UnitWargearCost::query()
+            ->where('point_set_id', $this->pointSet?->id)
+            ->whereIn('unit_id', $unitIds)
+            ->get()
+            ->keyBy(fn (UnitWargearCost $cost): string => $cost->unit_id.':'.$cost->name);
+
+        $this->attachments = UnitAttachment::query()
+            ->whereIn('leader_unit_id', $unitIds)
+            ->get()
+            ->mapWithKeys(fn (UnitAttachment $attachment): array => [$attachment->leader_unit_id.':'.$attachment->bodyguard_unit_id => $attachment->kind]);
+
+        foreach ($armyList->entries->sortBy([['position', 'asc'], ['id', 'asc']])->groupBy('unit_id') as $copies) {
+            foreach ($copies->values() as $index => $entry) {
+                $this->copyRanks[$entry->id] = $index + 1;
+            }
+        }
     }
 
     /**
-     * Points of the unit at its squad size, or null when the point set has no matching tier.
+     * Rank of the entry among the copies of its unit (1 for the first one).
+     */
+    public function copyRank(ArmyListEntry $entry): int
+    {
+        return $this->copyRanks[$entry->id] ?? 1;
+    }
+
+    /**
+     * Points of the unit at its squad size and copy rank, or null when the point set has no matching tier.
      */
     public function unitPoints(ArmyListEntry $entry): ?int
     {
-        return $this->unitCosts->get($entry->unit_id.':'.$entry->model_count)?->points;
+        return $this->unitCosts->get($entry->unit_id.':'.$entry->model_count)
+            ?->first(fn (UnitPointCost $cost): bool => $cost->from_copy <= $this->copyRank($entry))
+            ?->points;
     }
 
     public function enhancementPoints(ArmyListEntry $entry): int
@@ -82,9 +134,17 @@ final class ArmyListAnalysis
         return $entry->enhancement_id ? (int) $this->enhancementCosts->get($entry->enhancement_id)?->points : 0;
     }
 
+    /**
+     * Points of the paid wargear items taken by the unit (each item is paid per copy).
+     */
+    public function wargearPoints(ArmyListEntry $entry): int
+    {
+        return $entry->wargear->sum(fn (ArmyListEntryWargear $wargear): int => $wargear->quantity * (int) $this->wargearCosts->get($entry->unit_id.':'.$wargear->name)?->points);
+    }
+
     public function entryPoints(ArmyListEntry $entry): int
     {
-        return (int) $this->unitPoints($entry) + $this->enhancementPoints($entry);
+        return (int) $this->unitPoints($entry) + $this->enhancementPoints($entry) + $this->wargearPoints($entry);
     }
 
     public function totalPoints(): int
@@ -95,6 +155,24 @@ final class ArmyListAnalysis
     public function pointsLimit(): int
     {
         return $this->armyList->gameFormat->points_limit;
+    }
+
+    /**
+     * Detachment Points spent by the selected detachments.
+     */
+    public function detachmentPoints(): int
+    {
+        return $this->armyList->detachments->sum(fn (Detachment $detachment): int => (int) $detachment->detachment_points);
+    }
+
+    /**
+     * Detachment Points the game format allows, or null when it sets no limit.
+     */
+    public function detachmentPointsLimit(): ?int
+    {
+        $parameters = $this->armyList->gameFormat->compositionRules()->where('rule_type', 'max_detachment_points')->value('parameters');
+
+        return isset($parameters['max']) ? (int) $parameters['max'] : null;
     }
 
     /**
@@ -190,20 +268,21 @@ final class ArmyListAnalysis
     }
 
     /**
-     * Rules scoped to the list's game format, faction (and parent faction) or detachment.
+     * Rules scoped to the list's game format, faction (and parent faction) or selected detachments.
      *
      * @return Collection<int, CompositionRule>
      */
     private function applicableRules(): Collection
     {
         $armyList = $this->armyList;
+        $detachmentIds = $armyList->detachments->modelKeys();
 
         return CompositionRule::query()
-            ->where(function (Builder $query) use ($armyList): void {
+            ->where(function (Builder $query) use ($armyList, $detachmentIds): void {
                 $query->where(fn (Builder $query) => $query->where('scope_type', 'game_format')->where('scope_id', $armyList->game_format_id))
                     ->orWhere(fn (Builder $query) => $query->where('scope_type', 'faction')->whereIn('scope_id', $armyList->faction->lineageIds()))
-                    ->when($armyList->detachment_id, fn (Builder $query) => $query
-                        ->orWhere(fn (Builder $query) => $query->where('scope_type', 'detachment')->where('scope_id', $armyList->detachment_id)));
+                    ->when($detachmentIds !== [], fn (Builder $query) => $query
+                        ->orWhere(fn (Builder $query) => $query->where('scope_type', 'detachment')->whereIn('scope_id', $detachmentIds)));
             })
             ->orderBy('id')
             ->get();
@@ -219,6 +298,7 @@ final class ArmyListAnalysis
     {
         $entries = $this->armyList->entries;
         $parameters = $rule->parameters ?? [];
+        $withEnhancement = $entries->whereNotNull('enhancement_id');
 
         $details = match ($rule->rule_type) {
             'max_points' => $this->totalPoints() > $this->pointsLimit()
@@ -234,18 +314,51 @@ final class ArmyListAnalysis
                 ->filter()
                 ->values()
                 ->all(),
-            'max_enhancements' => ($count = $entries->whereNotNull('enhancement_id')->count()) > ($parameters['max'] ?? 3)
+            'max_enhancements' => ($count = $this->enhancementCount()) > ($parameters['max'] ?? 3)
                 ? ["{$count} / ".($parameters['max'] ?? 3)]
                 : [],
-            'unique_enhancements' => $entries->whereNotNull('enhancement_id')
+            'unique_enhancements' => $withEnhancement
+                ->reject(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)
                 ->groupBy('enhancement_id')
                 ->filter(fn (Collection $holders): bool => $holders->count() > 1)
                 ->map(fn (Collection $holders): string => (string) $holders->first()->enhancement->name)
                 ->values()
                 ->all(),
-            'enhancement_requires_character' => $entries->whereNotNull('enhancement_id')
-                ->reject(fn (ArmyListEntry $entry): bool => $entry->unit->role === UnitRole::Character && ! $entry->unit->is_epic_hero)
+            'max_upgrade_copies' => $withEnhancement
+                ->filter(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)
+                ->groupBy('enhancement_id')
+                ->filter(fn (Collection $holders): bool => $holders->count() > ($parameters['max'] ?? 3))
+                ->map(fn (Collection $holders): string => "{$holders->first()->enhancement->name} : {$holders->count()} / ".($parameters['max'] ?? 3))
+                ->values()
+                ->all(),
+            'enhancement_requires_character' => $withEnhancement
+                ->reject(fn (ArmyListEntry $entry): bool => ! $entry->unit->is_epic_hero && ($entry->unit->role === UnitRole::Character || $entry->enhancement->is_upgrade))
                 ->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)
+                ->values()
+                ->all(),
+            'enhancement_from_detachments' => $withEnhancement
+                ->reject(fn (ArmyListEntry $entry): bool => in_array($entry->enhancement->detachment_id, $this->armyList->detachments->modelKeys(), true))
+                ->map(fn (ArmyListEntry $entry): string => "{$entry->unit->name} : {$entry->enhancement->name}")
+                ->values()
+                ->all(),
+            'requires_detachment' => $this->armyList->detachments->isEmpty() ? ['Aucun détachement choisi.'] : [],
+            'max_detachment_points' => $this->detachmentPointsProblems($parameters),
+            'unique_detachment_tags' => $this->armyList->detachments
+                ->whereNotNull('unique_tag')
+                ->groupBy('unique_tag')
+                ->filter(fn (Collection $detachments): bool => $detachments->count() > 1)
+                ->map(fn (Collection $detachments, string $tag): string => "{$tag} : ".$detachments->map(fn (Detachment $detachment): string => (string) $detachment->name)->join(', '))
+                ->values()
+                ->all(),
+            'support_must_be_attached' => $entries
+                ->filter(fn (ArmyListEntry $entry): bool => $entry->attached_to_entry_id === null && $this->isSupportUnit($entry->unit_id))
+                ->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)
+                ->values()
+                ->all(),
+            'valid_attachment' => $this->attachmentProblems(),
+            'one_enhancement_per_attached_unit' => $this->attachedUnits()
+                ->filter(fn (Collection $members): bool => $members->whereNotNull('enhancement_id')->count() > 1)
+                ->map(fn (Collection $members): string => $members->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)->join(' + '))
                 ->values()
                 ->all(),
             'requires_warlord' => $this->warlordProblems(),
@@ -253,6 +366,17 @@ final class ArmyListAnalysis
         };
 
         return $details === [] ? null : $details;
+    }
+
+    /**
+     * Enhancements counted against the limit: the second and third copies of an Upgrade do not count.
+     */
+    public function enhancementCount(): int
+    {
+        $withEnhancement = $this->armyList->entries->whereNotNull('enhancement_id');
+
+        return $withEnhancement->reject(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)->count()
+            + $withEnhancement->filter(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)->unique('enhancement_id')->count();
     }
 
     /**
@@ -265,6 +389,90 @@ final class ArmyListAnalysis
         }
 
         return $parameters[$role->value] ?? $parameters['default'] ?? 3;
+    }
+
+    /**
+     * Too many Detachment Points, unless a single detachment fits the "only detachment" allowance
+     * (Incursion: one 3 DP detachment).
+     *
+     * @param  array<string, int>  $parameters
+     * @return list<string>
+     */
+    private function detachmentPointsProblems(array $parameters): array
+    {
+        $spent = $this->detachmentPoints();
+        $max = $parameters['max'] ?? null;
+
+        if ($max === null || $spent <= $max) {
+            return [];
+        }
+
+        if ($this->armyList->detachments->count() === 1 && $spent <= ($parameters['single_max'] ?? $max)) {
+            return [];
+        }
+
+        return ["{$spent} / {$max} DP"];
+    }
+
+    private function isSupportUnit(int $unitId): bool
+    {
+        return $this->attachments->contains(fn (string $kind, string $key): bool => $kind === UnitAttachment::SUPPORT && str_starts_with($key, $unitId.':'));
+    }
+
+    /**
+     * Attached entries whose unit cannot join their bodyguard or that are attached to another Leader / Support
+     * unit, and bodyguards led by more than one Leader or more than one Support unit (core rules 24.22 / 24.34).
+     *
+     * @return list<string>
+     */
+    private function attachmentProblems(): array
+    {
+        $entriesById = $this->armyList->entries->keyBy('id');
+        $attached = $this->armyList->entries->whereNotNull('attached_to_entry_id');
+
+        $invalid = $attached
+            ->map(function (ArmyListEntry $entry) use ($entriesById): ?string {
+                $bodyguard = $entriesById->get($entry->attached_to_entry_id);
+
+                if ($bodyguard === null || $bodyguard->attached_to_entry_id !== null) {
+                    return "{$entry->unit->name} : unité de rattachement invalide";
+                }
+
+                return $this->attachments->has($entry->unit_id.':'.$bodyguard->unit_id)
+                    ? null
+                    : "{$entry->unit->name} ne peut pas rejoindre {$bodyguard->unit->name}";
+            })
+            ->filter();
+
+        $crowded = $attached
+            ->filter(fn (ArmyListEntry $entry): bool => $entriesById->has($entry->attached_to_entry_id))
+            ->groupBy(fn (ArmyListEntry $entry): string => $entry->attached_to_entry_id.':'.$this->attachments->get($entry->unit_id.':'.$entriesById[$entry->attached_to_entry_id]->unit_id))
+            ->filter(fn (Collection $group, string $key): bool => $group->count() > 1 && ! str_ends_with($key, ':'))
+            ->map(function (Collection $group): string {
+                $bodyguard = $group->first()->attachedTo;
+                $kind = $this->attachments->get($group->first()->unit_id.':'.$bodyguard->unit_id) === UnitAttachment::SUPPORT ? 'Support' : 'Leader';
+
+                return "{$bodyguard->unit->name} : plusieurs unités {$kind} (".$group->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)->join(', ').')';
+            });
+
+        return $invalid->merge($crowded)->values()->all();
+    }
+
+    /**
+     * Each bodyguard entry with the Leader / Support entries attached to it.
+     *
+     * @return Collection<int, Collection<int, ArmyListEntry>>
+     */
+    public function attachedUnits(): Collection
+    {
+        $entries = $this->armyList->entries;
+
+        return $entries
+            ->whereNotNull('attached_to_entry_id')
+            ->groupBy('attached_to_entry_id')
+            ->filter(fn (Collection $attached, int $bodyguardId): bool => $entries->contains('id', $bodyguardId))
+            ->map(fn (Collection $attached, int $bodyguardId): Collection => collect([$entries->firstWhere('id', $bodyguardId)])->merge($attached))
+            ->values();
     }
 
     /**

@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'name', 'faction_id', 'detachment_id', 'game_format_id', 'point_set_id', 'notes'])]
+#[Fillable(['user_id', 'name', 'faction_id', 'game_format_id', 'point_set_id', 'notes'])]
 class ArmyList extends Model
 {
     /** @use HasFactory<ArmyListFactory> */
@@ -32,11 +33,33 @@ class ArmyList extends Model
     }
 
     /**
-     * @return BelongsTo<Detachment, $this>
+     * Selected detachments, in the order they were chosen (11th edition: several per list, within the DP budget).
+     *
+     * @return BelongsToMany<Detachment, $this>
      */
-    public function detachment(): BelongsTo
+    public function detachments(): BelongsToMany
     {
-        return $this->belongsTo(Detachment::class);
+        return $this->belongsToMany(Detachment::class, 'army_list_detachments')->withPivot('position')->orderByPivot('position');
+    }
+
+    /**
+     * Replace the selected detachments, keeping the given order.
+     *
+     * @param  list<int>  $detachmentIds
+     */
+    public function syncDetachments(array $detachmentIds): void
+    {
+        $this->detachments()->sync(collect(array_values(array_unique($detachmentIds)))
+            ->mapWithKeys(fn (int $id, int $position): array => [$id => ['position' => $position]])
+            ->all());
+    }
+
+    /**
+     * Detachment names joined for display ("Gladius Task Force + Bastion Task Force").
+     */
+    public function detachmentNames(): string
+    {
+        return $this->detachments->map(fn (Detachment $detachment): string => (string) $detachment->name)->join(' + ');
     }
 
     /**

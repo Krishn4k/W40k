@@ -19,7 +19,7 @@ final class ArmyListTextExport
             "{$armyList->name} — {$this->analysis->totalPoints()} / {$this->analysis->pointsLimit()} pts",
             implode(' · ', array_filter([
                 'Faction : '.$armyList->faction->fullName(),
-                $armyList->detachment ? 'Détachement : '.$armyList->detachment->name : null,
+                $armyList->detachments->isNotEmpty() ? 'Détachement'.($armyList->detachments->count() > 1 ? 's' : '').' : '.$armyList->detachmentNames().' ('.$this->analysis->detachmentPoints().' DP)' : null,
                 'Format : '.$armyList->gameFormat->name,
                 $this->analysis->pointSet ? 'Points : '.$this->analysis->pointSet->name : null,
             ])),
@@ -29,8 +29,16 @@ final class ArmyListTextExport
         foreach ($armyList->entries as $entry) {
             $lines[] = $this->entryLine($entry);
 
+            if ($entry->attachedTo) {
+                $lines[] = "  • Rattachée à : {$entry->attachedTo->unit->name}";
+            }
+
             if ($entry->enhancement) {
-                $lines[] = "  • Optimisation : {$entry->enhancement->name} (+{$this->analysis->enhancementPoints($entry)} pts)";
+                $lines[] = '  • '.($entry->enhancement->is_upgrade ? 'Upgrade' : 'Optimisation')." : {$entry->enhancement->name} (+{$this->analysis->enhancementPoints($entry)} pts)";
+            }
+
+            foreach ($entry->wargear as $wargear) {
+                $lines[] = "  • Équipement : {$wargear->name} ×{$wargear->quantity}";
             }
         }
 
@@ -56,6 +64,7 @@ final class ArmyListTextExport
             $englishName !== $name ? " ({$englishName})" : '',
             $entry->model_count > 1 ? " ×{$entry->model_count}" : '',
             ' — '.($this->analysis->unitPoints($entry) ?? '?').' pts',
+            $this->analysis->wargearPoints($entry) > 0 ? ' (+'.$this->analysis->wargearPoints($entry).' pts d\'équipement)' : '',
             $entry->is_warlord ? ' — Seigneur de guerre' : '',
         ]);
     }

@@ -10,7 +10,10 @@
             <h1 class="text-2xl font-semibold">{{ $armyList->name }}</h1>
             <p class="text-sm text-zinc-600 dark:text-zinc-400">
                 {{ $armyList->faction->fullName() }}
-                · {{ $armyList->detachment ? $armyList->detachment->name : 'Détachement à choisir' }}
+                · {{ $armyList->detachments->isNotEmpty() ? $armyList->detachmentNames() : 'Détachement à choisir' }}
+                @if ($armyList->detachments->isNotEmpty())
+                    ({{ $analysis->detachmentPoints() }}{{ $analysis->detachmentPointsLimit() !== null ? ' / '.$analysis->detachmentPointsLimit() : '' }} DP)
+                @endif
                 · {{ $armyList->gameFormat->name }}
                 · {{ $analysis->pointSet ? 'Points : '.$analysis->pointSet->name.($armyList->point_set_id ? ' (figée)' : '') : 'Aucune version de points' }}
             </p>
@@ -81,8 +84,20 @@
                                     @endif
                                     <span class="ml-2 font-semibold">{{ $analysis->entryPoints($entry) }} pts</span>
                                 </p>
+                                @if ($analysis->copyRank($entry) > 1)
+                                    <p class="text-xs text-zinc-500">{{ $analysis->copyRank($entry) }}e exemplaire de cette unité</p>
+                                @endif
+                                @if ($entry->attachedTo)
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Rattachée à : {{ $entry->attachedTo->unit->name }}</p>
+                                @endif
                                 @if ($entry->enhancement)
-                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Optimisation : {{ $entry->enhancement->name }} (+{{ $analysis->enhancementPoints($entry) }} pts)</p>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $entry->enhancement->is_upgrade ? 'Upgrade' : 'Optimisation' }} : {{ $entry->enhancement->name }} (+{{ $analysis->enhancementPoints($entry) }} pts)</p>
+                                @endif
+                                @if ($entry->wargear->isNotEmpty())
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                                        Équipement : {{ $entry->wargear->map(fn ($wargear) => $wargear->name.' ×'.$wargear->quantity)->join(', ') }}
+                                        (+{{ $analysis->wargearPoints($entry) }} pts)
+                                    </p>
                                 @endif
                                 <p @class([
                                     'mt-1 text-sm',
@@ -118,7 +133,7 @@
 
     <section class="card">
         <h2 class="mb-4 text-lg font-semibold">Ajouter une unité</h2>
-        @include('army-lists._entry-form', ['action' => route('army-lists.entries.store', $armyList)])
+        @include('army-lists._entry-form', ['action' => route('army-lists.entries.store', $armyList), 'entry' => null])
     </section>
 
     @if ($armyList->notes)

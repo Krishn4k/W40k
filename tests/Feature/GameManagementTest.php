@@ -37,7 +37,10 @@ class GameManagementTest extends TestCase
         $this->armyList = ArmyList::factory()->for($this->user)->create([
             'name' => 'Liste de tournoi',
             'faction_id' => $faction->id,
-            'detachment_id' => Detachment::factory()->for($faction)->create(['name' => ['en' => 'Gladius Task Force']])->id,
+        ]);
+        $this->armyList->syncDetachments([
+            Detachment::factory()->for($faction)->create(['name' => ['en' => 'Gladius Task Force']])->id,
+            Detachment::factory()->for($faction)->create(['name' => ['en' => 'Ironstorm Spearhead']])->id,
         ]);
         ArmyListEntry::factory()->for($this->armyList)->for($captain)->create(['model_count' => 1, 'is_warlord' => true]);
     }
@@ -64,7 +67,8 @@ class GameManagementTest extends TestCase
         $this->assertSame('Liste de tournoi', $game->list_name);
         $this->assertSame(80, $game->list_points);
         $this->assertSame($this->armyList->faction_id, $game->faction_id);
-        $this->assertSame($this->armyList->detachment_id, $game->detachment_id);
+        $this->assertSame($this->armyList->detachments->first()->id, $game->detachment_id, 'The first detachment is the main one.');
+        $this->assertStringContainsString('Détachements : Gladius Task Force + Ironstorm Spearhead', $game->list_snapshot);
         $this->assertStringContainsString('★ Captain — 80 pts — Seigneur de guerre', $game->list_snapshot);
 
         $this->armyList->entries()->delete();

@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Units of an army list. Designating a Warlord removes the title from the other entries.
+ * Units of an army list. Designating a Warlord removes the title from the other entries; a unit that
+ * joins a bodyguard unit releases the units that were attached to it.
  */
 class ArmyListEntryController extends Controller
 {
@@ -44,8 +45,19 @@ class ArmyListEntryController extends Controller
     {
         $entry->fill([
             ...$request->safe()->only(['unit_id', 'model_count', 'enhancement_id', 'collection_lot_id']),
+            'attached_to_entry_id' => $request->validated('attached_to_entry_id'),
             'is_warlord' => $request->boolean('is_warlord'),
         ])->save();
+
+        $entry->wargear()->delete();
+        $entry->wargear()->createMany(collect($request->wargearQuantities())
+            ->map(fn (int $quantity, string $name): array => ['name' => $name, 'quantity' => $quantity])
+            ->values()
+            ->all());
+
+        if ($entry->attached_to_entry_id !== null) {
+            $entry->attachedEntries()->update(['attached_to_entry_id' => null]);
+        }
 
         if ($entry->is_warlord) {
             ArmyListEntry::query()

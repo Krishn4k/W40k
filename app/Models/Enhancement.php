@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['bsdata_id', 'detachment_id', 'name'])]
+#[Fillable(['bsdata_id', 'detachment_id', 'name', 'is_upgrade'])]
 class Enhancement extends Model
 {
     /** @use HasFactory<EnhancementFactory> */
@@ -26,6 +26,7 @@ class Enhancement extends Model
     {
         return [
             'name' => LocalizedText::class,
+            'is_upgrade' => 'boolean',
         ];
     }
 

@@ -160,12 +160,66 @@ Alpine.data('filterableSelect', (options, selected = '') => ({
  * Formulaire d'une unité de liste d'armée : les tailles d'escouade, lots de la collection
  * et optimisations proposés dépendent de l'unité choisie.
  */
+/**
+ * Choix des détachements d'une liste : cases à cocher de la faction choisie, total des points de
+ * détachement (DP) comparé à la limite du format, et tags « Unique » en double signalés.
+ */
+Alpine.data('detachmentPicker', (config) => ({
+    ...config,
+    query: '',
+
+    get detachments() {
+        return this.detachmentsByFaction[this.factionId] ?? [];
+    },
+
+    /**
+     * Détachements correspondant à la recherche ; ceux déjà cochés restent affichés pour être envoyés.
+     */
+    get visibleDetachments() {
+        const words = normalize(this.query.trim()).split(/\s+/).filter(Boolean);
+
+        return this.detachments.filter((detachment) => this.selectedIds.includes(detachment.id)
+            || words.every((word) => normalize(`${detachment.name} ${detachment.uniqueTag ?? ''}`).includes(word)));
+    },
+
+    get selected() {
+        return this.detachments.filter((detachment) => this.selectedIds.includes(detachment.id));
+    },
+
+    get spentPoints() {
+        return this.selected.reduce((total, detachment) => total + (detachment.points ?? 0), 0);
+    },
+
+    get limit() {
+        return this.pointLimits[this.gameFormatId] ?? null;
+    },
+
+    get pointsExceeded() {
+        if (! this.limit || this.spentPoints <= this.limit.max) {
+            return false;
+        }
+
+        return ! (this.selected.length === 1 && this.spentPoints <= (this.limit.single_max ?? this.limit.max));
+    },
+
+    get tagConflicts() {
+        const byTag = {};
+        for (const detachment of this.selected.filter((detachment) => detachment.uniqueTag)) {
+            (byTag[detachment.uniqueTag] ??= []).push(detachment.name);
+        }
+
+        return Object.entries(byTag).filter(([, names]) => names.length > 1).map(([tag, names]) => `${tag} (${names.join(', ')})`);
+    },
+}));
+
 Alpine.data('armyListEntryForm', (options, initial = {}) => ({
     options,
     unitId: initial.unitId ?? '',
     modelCount: initial.modelCount ?? '',
     enhancementId: initial.enhancementId ?? '',
     lotId: initial.lotId ?? '',
+    attachedToEntryId: initial.attachedToEntryId ?? '',
+    wargear: initial.wargear ?? {},
     isWarlord: initial.isWarlord ?? false,
 
     unitQuery: '',
@@ -207,6 +261,33 @@ Alpine.data('armyListEntryForm', (options, initial = {}) => ({
         return this.unit?.canTakeEnhancement ?? false;
     },
 
+    /**
+     * Optimisations des détachements de la liste : un Personnage (hors Héros épique) les prend toutes,
+     * les autres unités seulement les Upgrades.
+     */
+    get enhancements() {
+        if (! this.unit) {
+            return [];
+        }
+
+        return this.options.enhancements.filter((enhancement) => this.unit.canTakeEnhancement || (enhancement.isUpgrade && this.unit.canTakeUpgrade));
+    },
+
+    get wargearOptions() {
+        return this.unit?.wargear ?? [];
+    },
+
+    /**
+     * Unités de la liste que cette unité Leader / Support peut rejoindre (pas elle-même ni une unité déjà rattachée).
+     */
+    get bodyguards() {
+        const ids = this.unit?.bodyguardUnitIds ?? [];
+
+        return this.options.entries.filter((entry) => ids.includes(entry.unitId)
+            && entry.id !== Number(initial.entryId)
+            && (! entry.isAttached || entry.id === Number(this.attachedToEntryId)));
+    },
+
     unitChanged() {
         if (! this.squadSizes.some((size) => size.modelCount === Number(this.modelCount))) {
             this.modelCount = this.squadSizes[0]?.modelCount ?? 1;
@@ -214,9 +295,13 @@ Alpine.data('armyListEntryForm', (options, initial = {}) => ({
         if (! this.lots.some((lot) => lot.id === Number(this.lotId))) {
             this.lotId = '';
         }
-        if (! this.canTakeEnhancement) {
+        if (! this.enhancements.some((enhancement) => enhancement.id === Number(this.enhancementId))) {
             this.enhancementId = '';
         }
+        if (! this.bodyguards.some((entry) => entry.id === Number(this.attachedToEntryId))) {
+            this.attachedToEntryId = '';
+        }
+        this.wargear = {};
     },
 }));
 

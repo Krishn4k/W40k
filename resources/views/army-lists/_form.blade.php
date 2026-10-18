@@ -8,49 +8,77 @@
     @enderror
 </div>
 
-<div x-data="{ factionId: @js((string) old('faction_id', $armyList->faction_id)), detachmentsByFaction: @js($detachmentsByFaction) }"
-     class="grid gap-4 sm:grid-cols-2">
-    <div>
-        <label for="faction_id" class="form-label">Faction</label>
-        <select id="faction_id" name="faction_id" required x-model="factionId" class="form-input">
-            <option value="">—</option>
-            @foreach ($factionOptions as $id => $label)
-                <option value="{{ $id }}" @selected((string) old('faction_id', $armyList->faction_id) === (string) $id)>{{ $label }}</option>
-            @endforeach
-        </select>
-        @error('faction_id')
-            <p class="form-error">{{ $message }}</p>
-        @enderror
+<div x-data="detachmentPicker({
+         factionId: @js((string) old('faction_id', $armyList->faction_id)),
+         gameFormatId: @js((string) old('game_format_id', $armyList->game_format_id)),
+         selectedIds: @js($selectedDetachmentIds),
+         detachmentsByFaction: @js($detachmentsByFaction),
+         pointLimits: @js($detachmentPointLimits),
+     })"
+     class="flex flex-col gap-4">
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+            <label for="faction_id" class="form-label">Faction</label>
+            <select id="faction_id" name="faction_id" required x-model="factionId" class="form-input">
+                <option value="">—</option>
+                @foreach ($factionOptions as $id => $label)
+                    <option value="{{ $id }}" @selected((string) old('faction_id', $armyList->faction_id) === (string) $id)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('faction_id')
+                <p class="form-error">{{ $message }}</p>
+            @enderror
+        </div>
+        <div>
+            <label for="game_format_id" class="form-label">Format</label>
+            <select id="game_format_id" name="game_format_id" required x-model="gameFormatId" class="form-input">
+                @foreach ($gameFormats as $gameFormat)
+                    <option value="{{ $gameFormat->id }}" @selected((string) old('game_format_id', $armyList->game_format_id) === (string) $gameFormat->id)>
+                        {{ $gameFormat->name }} ({{ $gameFormat->points_limit }} pts)
+                    </option>
+                @endforeach
+            </select>
+            @error('game_format_id')
+                <p class="form-error">{{ $message }}</p>
+            @enderror
+        </div>
     </div>
-    <div>
-        <label for="detachment_id" class="form-label">Détachement</label>
-        <select id="detachment_id" name="detachment_id" class="form-input">
-            <option value="">À choisir plus tard</option>
-            <template x-for="detachment in (detachmentsByFaction[factionId] ?? [])" :key="detachment.id">
-                <option :value="detachment.id" :selected="detachment.id === {{ (int) old('detachment_id', $armyList->detachment_id) }}" x-text="detachment.name"></option>
+
+    <fieldset>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <legend class="form-label">Détachements</legend>
+            <p class="text-sm" :class="pointsExceeded ? 'text-red-700 dark:text-red-400 font-medium' : 'text-zinc-600 dark:text-zinc-400'"
+               x-text="limit ? `${spentPoints} / ${limit.max} DP` + (limit.single_max ? ` (ou un seul détachement jusqu'à ${limit.single_max} DP)` : '') : `${spentPoints} DP`"></p>
+        </div>
+        <input type="search" x-model="query" placeholder="Rechercher un détachement…" aria-label="Rechercher un détachement" class="form-input mt-1">
+        <p x-show="! factionId" class="form-help">Choisis d'abord la faction.</p>
+        <ul x-show="factionId" class="mt-2 grid max-h-72 gap-1 overflow-y-auto rounded-md border border-zinc-200 p-2 sm:grid-cols-2 dark:border-zinc-800">
+            <template x-for="detachment in visibleDetachments" :key="detachment.id">
+                <li>
+                    <label class="flex items-start gap-2 rounded px-1.5 py-1 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                        <input type="checkbox" name="detachment_ids[]" :value="detachment.id" x-model.number="selectedIds" class="mt-0.5 rounded border-zinc-300 dark:border-zinc-700">
+                        <span>
+                            <span x-text="detachment.name"></span>
+                            <span class="text-zinc-500" x-text="detachment.points !== null ? ` · ${detachment.points} DP` : ''"></span>
+                            <template x-if="detachment.uniqueTag">
+                                <span class="ml-1 rounded bg-zinc-100 px-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300" x-text="`Unique : ${detachment.uniqueTag}`"></span>
+                            </template>
+                        </span>
+                    </label>
+                </li>
             </template>
-        </select>
-        <p class="form-help">Changer de détachement retire les optimisations de l'ancien.</p>
-        @error('detachment_id')
+        </ul>
+        <template x-for="conflict in tagConflicts" :key="conflict">
+            <p class="form-error" x-text="`Tag « Unique » en double : ${conflict}`"></p>
+        </template>
+        <p class="form-help">Retirer un détachement enlève ses optimisations des unités.</p>
+        @error('detachment_ids')
             <p class="form-error">{{ $message }}</p>
         @enderror
-    </div>
+    </fieldset>
 </div>
 
 <div class="grid gap-4 sm:grid-cols-2">
-    <div>
-        <label for="game_format_id" class="form-label">Format</label>
-        <select id="game_format_id" name="game_format_id" required class="form-input">
-            @foreach ($gameFormats as $gameFormat)
-                <option value="{{ $gameFormat->id }}" @selected((string) old('game_format_id', $armyList->game_format_id) === (string) $gameFormat->id)>
-                    {{ $gameFormat->name }} ({{ $gameFormat->points_limit }} pts)
-                </option>
-            @endforeach
-        </select>
-        @error('game_format_id')
-            <p class="form-error">{{ $message }}</p>
-        @enderror
-    </div>
     <div>
         <label for="point_set_id" class="form-label">Version des points</label>
         <select id="point_set_id" name="point_set_id" class="form-input">

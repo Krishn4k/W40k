@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Points cost of a unit for a given squad size, in a given point set.
+ * Points cost of a unit for a given squad size, in a given point set, from a given copy rank in the army
+ * (11th edition: the 3rd and following copies of a unit may cost more).
  */
-#[Fillable(['unit_id', 'point_set_id', 'model_count', 'points'])]
+#[Fillable(['unit_id', 'point_set_id', 'model_count', 'from_copy', 'points'])]
 #[WithoutTimestamps]
 class UnitPointCost extends Model
 {
@@ -28,6 +29,7 @@ class UnitPointCost extends Model
     {
         return [
             'model_count' => 'integer',
+            'from_copy' => 'integer',
             'points' => 'integer',
         ];
     }

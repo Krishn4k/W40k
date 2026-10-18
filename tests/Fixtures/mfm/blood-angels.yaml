@@ -1,0 +1,21 @@
+name: Blood Angels
+slug: blood-angels
+version: "1.5"
+firstSeen: 2026-09-30
+parent: Space Marines
+detachments: []
+units:
+  - name: Captain
+    groupTitle: Space Marines
+    pricing:
+      - range: "[1,)"
+        label: Your Unit Costs
+        costs:
+          - { models: 1, points: 999 }
+  - name: Sanguinary Guard
+    pricing:
+      - range: "[1,)"
+        label: Your Unit Costs
+        costs:
+          - { models: 3, points: 120 }
+          - { models: 6, points: 240 }

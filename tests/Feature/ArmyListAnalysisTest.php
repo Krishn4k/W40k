@@ -14,6 +14,7 @@ use App\Models\GameFormat;
 use App\Models\LotStatusCount;
 use App\Models\PointSet;
 use App\Models\Unit;
+use App\Models\UnitAttachment;
 use App\Models\User;
 use App\Support\ArmyListAnalysis;
 use Database\Seeders\GameFormatSeeder;
@@ -45,9 +46,9 @@ class ArmyListAnalysisTest extends TestCase
         $this->detachment = Detachment::factory()->for($this->faction)->create();
         $this->armyList = ArmyList::factory()->for($this->user)->create([
             'faction_id' => $this->faction->id,
-            'detachment_id' => $this->detachment->id,
             'game_format_id' => GameFormat::query()->where('points_limit', 1000)->sole()->id,
         ]);
+        $this->armyList->syncDetachments([$this->detachment->id]);
     }
 
     public function test_points_are_the_sum_of_unit_tiers_and_enhancements(): void
@@ -94,14 +95,14 @@ class ArmyListAnalysisTest extends TestCase
         $lieutenant = $this->unit(UnitRole::Character, [1 => 10], ['en' => 'Lieutenant']);
         $intercessors = $this->unit(UnitRole::Battleline, [5 => 10]);
         $this->entry($lieutenant, 1, ['is_warlord' => true]);
-        foreach (range(1, 3) as $copy) {
+        foreach (range(1, 2) as $copy) {
             $this->entry($lieutenant, 1);
         }
-        foreach (range(1, 6) as $copy) {
+        foreach (range(1, 4) as $copy) {
             $this->entry($intercessors, 5);
         }
 
-        $this->assertViolation('max_unit_copies', ['Lieutenant : 4 / 3']);
+        $this->assertViolation('max_unit_copies', ['Lieutenant : 3 / 2']);
     }
 
     public function test_an_epic_hero_can_only_be_taken_once(): void
@@ -125,7 +126,7 @@ class ArmyListAnalysisTest extends TestCase
         $this->entry($dante, 1, ['enhancement_id' => $this->enhancement(15)->id]);
         $this->entry($intercessors, 5, ['enhancement_id' => $this->enhancement(20)->id]);
 
-        $this->assertViolation('max_enhancements', ['4 / 3']);
+        $this->assertViolation('max_enhancements', ['4 / 2']);
         $this->assertViolation('unique_enhancements', ['Artificer Armour']);
         $this->assertViolation('enhancement_requires_character', ['Commander Dante', 'Intercessor Squad']);
     }
@@ -161,6 +162,99 @@ class ArmyListAnalysisTest extends TestCase
         $messages = array_column((new ArmyListAnalysis($this->armyList))->violations(), 'message');
 
         $this->assertSame(['Detachment limit'], $messages);
+    }
+
+    public function test_later_copies_pay_the_requisition_threshold_cost_and_wargear_is_paid_per_item(): void
+    {
+        $inceptors = $this->unit(UnitRole::Other, [3 => 100]);
+        $inceptors->pointCosts()->create(['point_set_id' => $this->pointSet->id, 'model_count' => 3, 'from_copy' => 2, 'points' => 120]);
+        $inceptors->wargearCosts()->create(['point_set_id' => $this->pointSet->id, 'name' => 'Plasma Exterminators', 'points' => 5]);
+
+        $first = $this->entry($inceptors, 3, ['position' => 1]);
+        $this->entry($inceptors, 3, ['position' => 2]);
+        $first->wargear()->create(['name' => 'Plasma Exterminators', 'quantity' => 2]);
+
+        $analysis = new ArmyListAnalysis($this->armyList->fresh());
+        [$first, $second] = $analysis->armyList->entries->sortBy('position')->values()->all();
+
+        $this->assertSame([1, 2], [$analysis->copyRank($first), $analysis->copyRank($second)]);
+        $this->assertSame([110, 120], [$analysis->entryPoints($first), $analysis->entryPoints($second)]);
+    }
+
+    public function test_detachment_points_and_unique_tags_are_checked(): void
+    {
+        $this->detachment->update(['detachment_points' => 3]);
+        $this->assertNotContains('max_detachment_points', $this->violationTypes(), 'Incursion allows a single 3 DP detachment.');
+
+        $second = Detachment::factory()->for($this->faction)->create(['detachment_points' => 1, 'unique_tag' => 'Doctrines', 'name' => ['en' => 'Assault Brethren']]);
+        $third = Detachment::factory()->for($this->faction)->create(['detachment_points' => 1, 'unique_tag' => 'Doctrines', 'name' => ['en' => 'Devastator Brethren']]);
+        $this->armyList->syncDetachments([$this->detachment->id, $second->id, $third->id]);
+
+        $this->assertViolation('max_detachment_points', ['5 / 2 DP']);
+        $this->assertViolation('unique_detachment_tags', ['Doctrines : Assault Brethren, Devastator Brethren']);
+
+        $this->armyList->syncDetachments([]);
+        $this->assertViolation('requires_detachment', ['Aucun détachement choisi.']);
+    }
+
+    public function test_upgrades_go_to_any_unit_up_to_three_times_and_count_once(): void
+    {
+        $captain = $this->unit(UnitRole::Character, [1 => 80]);
+        $tank = $this->unit(UnitRole::Other, [1 => 150], ['en' => 'Predator']);
+        $upgrade = $this->enhancement(15, ['en' => 'Gunnery Honours']);
+        $upgrade->update(['is_upgrade' => true]);
+
+        $this->entry($captain, 1, ['is_warlord' => true, 'enhancement_id' => $this->enhancement(20)->id]);
+        foreach (range(1, 4) as $copy) {
+            $this->entry($tank, 1, ['enhancement_id' => $upgrade->id]);
+        }
+
+        $analysis = new ArmyListAnalysis($this->armyList->fresh());
+        $this->assertSame(2, $analysis->enhancementCount());
+        $this->assertSame(80 + 20 + 4 * 165, $analysis->totalPoints());
+
+        $types = $this->violationTypes();
+        $this->assertContains('max_upgrade_copies', $types);
+        $this->assertNotContains('max_enhancements', $types);
+        $this->assertNotContains('unique_enhancements', $types);
+        $this->assertNotContains('enhancement_requires_character', $types);
+    }
+
+    public function test_enhancements_must_come_from_a_selected_detachment(): void
+    {
+        $captain = $this->unit(UnitRole::Character, [1 => 80], ['en' => 'Captain']);
+        $other = Enhancement::factory()->for(Detachment::factory()->for($this->faction))->create(['name' => ['en' => 'Foreign Relic']]);
+        $this->entry($captain, 1, ['is_warlord' => true, 'enhancement_id' => $other->id]);
+
+        $this->assertViolation('enhancement_from_detachments', ['Captain : Foreign Relic']);
+    }
+
+    public function test_leader_and_support_attachments_are_checked(): void
+    {
+        $captain = $this->unit(UnitRole::Character, [1 => 80], ['en' => 'Captain']);
+        $apothecary = $this->unit(UnitRole::Character, [1 => 50], ['en' => 'Apothecary']);
+        $intercessors = $this->unit(UnitRole::Battleline, [5 => 80], ['en' => 'Intercessor Squad']);
+        $tank = $this->unit(UnitRole::Other, [1 => 150], ['en' => 'Predator']);
+        UnitAttachment::create(['leader_unit_id' => $captain->id, 'bodyguard_unit_id' => $intercessors->id, 'kind' => UnitAttachment::LEADER]);
+        UnitAttachment::create(['leader_unit_id' => $apothecary->id, 'bodyguard_unit_id' => $intercessors->id, 'kind' => UnitAttachment::SUPPORT]);
+
+        $squad = $this->entry($intercessors, 5);
+        $vehicle = $this->entry($tank, 1);
+        $leader = $this->entry($captain, 1, ['is_warlord' => true, 'attached_to_entry_id' => $vehicle->id]);
+        $support = $this->entry($apothecary, 1);
+
+        $this->assertViolation('valid_attachment', ['Captain ne peut pas rejoindre Predator']);
+        $this->assertViolation('support_must_be_attached', ['Apothecary']);
+
+        $leader->update(['attached_to_entry_id' => $squad->id, 'enhancement_id' => $this->enhancement(20)->id]);
+        $support->update(['attached_to_entry_id' => $squad->id, 'enhancement_id' => $this->enhancement(10)->id]);
+
+        $this->assertViolation('one_enhancement_per_attached_unit', ['Intercessor Squad + Captain + Apothecary']);
+        $this->assertNotContains('valid_attachment', $this->violationTypes());
+        $this->assertNotContains('support_must_be_attached', $this->violationTypes());
+
+        $this->entry($captain, 1, ['attached_to_entry_id' => $squad->id]);
+        $this->assertViolation('valid_attachment', ['Intercessor Squad : plusieurs unités Leader (Captain, Captain)']);
     }
 
     public function test_playability_depends_on_the_assigned_lot_and_the_threshold(): void
@@ -245,6 +339,14 @@ class ArmyListAnalysisTest extends TestCase
         }
 
         return $lot;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function violationTypes(): array
+    {
+        return array_column((new ArmyListAnalysis($this->armyList->fresh()))->violations(), 'rule_type');
     }
 
     /**

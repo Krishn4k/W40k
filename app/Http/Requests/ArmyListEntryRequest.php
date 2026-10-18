@@ -37,7 +37,10 @@ class ArmyListEntryRequest extends FormRequest
         return [
             'unit_id' => ['required', 'integer', Rule::in($armyList->faction->availableUnits()->pluck('id')->all())],
             'model_count' => ['required', 'integer', 'min:1', 'max:100'],
-            'enhancement_id' => ['nullable', 'integer', Rule::exists('enhancements', 'id')->where('detachment_id', $armyList->detachment_id)],
+            'enhancement_id' => ['nullable', 'integer', Rule::exists('enhancements', 'id')->whereIn('detachment_id', $armyList->detachments()->pluck('detachments.id')->all())],
+            'attached_to_entry_id' => ['nullable', 'integer', Rule::exists('army_list_entries', 'id')->where('army_list_id', $armyList->id)],
+            'wargear' => ['nullable', 'array'],
+            'wargear.*' => ['integer', 'min:0', 'max:20'],
             'collection_lot_id' => ['nullable', 'integer', Rule::exists('collection_lots', 'id')->where('user_id', $this->user()->id)],
             'is_warlord' => ['boolean'],
         ];
@@ -50,7 +53,8 @@ class ArmyListEntryRequest extends FormRequest
     {
         return [
             'unit_id.in' => 'Cette unité n\'est pas disponible pour la faction de la liste.',
-            'enhancement_id.exists' => 'Cette optimisation n\'appartient pas au détachement de la liste.',
+            'enhancement_id.exists' => 'Cette optimisation n\'appartient à aucun détachement de la liste.',
+            'attached_to_entry_id.exists' => 'L\'unité de rattachement doit faire partie de cette liste.',
         ];
     }
 
@@ -74,6 +78,15 @@ class ArmyListEntryRequest extends FormRequest
                     $validator->errors()->add('model_count', 'Taille d\'escouade possible : '.$squadSizes->sort()->join(', ', ' ou ').' figurine(s).');
                 }
 
+                $paidWargear = $unit->wargearCosts()->where('point_set_id', $this->armyList()->effectivePointSet()?->id)->pluck('name');
+                if (collect($this->wargearQuantities())->keys()->diff($paidWargear)->isNotEmpty()) {
+                    $validator->errors()->add('wargear', 'Équipement inconnu pour cette unité.');
+                }
+
+                if ($this->filled('attached_to_entry_id')) {
+                    $this->validateAttachment($validator);
+                }
+
                 if ($this->filled('collection_lot_id')) {
                     $this->validateLot($validator, CollectionLot::find($this->integer('collection_lot_id')), $unit);
                 }
@@ -84,6 +97,35 @@ class ArmyListEntryRequest extends FormRequest
     public function armyList(): ArmyList
     {
         return $this->route('army_list');
+    }
+
+    /**
+     * Paid wargear items taken, by name (items with a zero quantity are left out).
+     *
+     * @return array<string, int>
+     */
+    public function wargearQuantities(): array
+    {
+        return collect((array) $this->input('wargear', []))
+            ->map(fn (mixed $quantity): int => (int) $quantity)
+            ->filter(fn (int $quantity): bool => $quantity > 0)
+            ->all();
+    }
+
+    /**
+     * A unit joins a bodyguard unit, never itself nor a unit that is itself attached.
+     */
+    private function validateAttachment(Validator $validator): void
+    {
+        /** @var ArmyListEntry|null $entry */
+        $entry = $this->route('entry');
+        $bodyguard = ArmyListEntry::find($this->integer('attached_to_entry_id'));
+
+        if ($entry && $bodyguard->is($entry)) {
+            $validator->errors()->add('attached_to_entry_id', 'Une unité ne peut pas se rattacher à elle-même.');
+        } elseif ($bodyguard->attached_to_entry_id !== null) {
+            $validator->errors()->add('attached_to_entry_id', 'Cette unité est déjà rattachée à une autre : choisis l\'unité garde du corps.');
+        }
     }
 
     private function validateLot(Validator $validator, CollectionLot $lot, Unit $unit): void

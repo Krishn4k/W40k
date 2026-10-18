@@ -39,24 +39,28 @@ class ArmyListManagementTest extends TestCase
         $this->strikeForce = GameFormat::query()->where('points_limit', 2000)->sole();
     }
 
-    public function test_a_list_is_created_and_shown(): void
+    public function test_a_list_is_created_with_several_detachments_and_shown(): void
     {
-        $detachment = Detachment::factory()->for($this->faction)->create(['name' => ['en' => 'Gladius Task Force']]);
+        $gladius = Detachment::factory()->for($this->faction)->create(['name' => ['en' => 'Gladius Task Force'], 'detachment_points' => 2]);
+        $ironstorm = Detachment::factory()->for($this->faction)->create(['name' => ['en' => 'Ironstorm Spearhead'], 'detachment_points' => 1]);
 
         $this->actingAs($this->user)->get(route('army-lists.create'))->assertOk()->assertSee('Gladius Task Force');
 
         $response = $this->actingAs($this->user)->post(route('army-lists.store'), [
             'name' => 'Tournoi de novembre',
             'faction_id' => $this->faction->id,
-            'detachment_id' => $detachment->id,
+            'detachment_ids' => [$gladius->id, $ironstorm->id],
             'game_format_id' => $this->strikeForce->id,
         ]);
 
         $armyList = $this->user->armyLists()->sole();
         $response->assertRedirect(route('army-lists.show', $armyList));
+        $this->assertSame([$gladius->id, $ironstorm->id], $armyList->detachments->modelKeys());
         $this->actingAs($this->user)->get(route('army-lists.show', $armyList))
             ->assertOk()
             ->assertSee('Tournoi de novembre')
+            ->assertSee('Gladius Task Force + Ironstorm Spearhead')
+            ->assertSee('3 / 3 DP')
             ->assertSee('0')
             ->assertSee('/ 2000 pts')
             ->assertSee('Ajouter une unité');
@@ -69,9 +73,9 @@ class ArmyListManagementTest extends TestCase
         $this->actingAs($this->user)->post(route('army-lists.store'), [
             'name' => 'Liste',
             'faction_id' => $this->faction->id,
-            'detachment_id' => $otherDetachment->id,
+            'detachment_ids' => [$otherDetachment->id],
             'game_format_id' => $this->strikeForce->id,
-        ])->assertSessionHasErrors('detachment_id');
+        ])->assertSessionHasErrors('detachment_ids');
     }
 
     public function test_a_sub_faction_list_can_use_its_parent_detachments(): void
@@ -82,24 +86,34 @@ class ArmyListManagementTest extends TestCase
         $this->actingAs($this->user)->post(route('army-lists.store'), [
             'name' => 'Liste',
             'faction_id' => $bloodAngels->id,
-            'detachment_id' => $gladius->id,
+            'detachment_ids' => [$gladius->id],
             'game_format_id' => $this->strikeForce->id,
         ])->assertSessionHasNoErrors();
     }
 
-    public function test_changing_the_detachment_removes_the_previous_enhancements(): void
+    public function test_unselecting_a_detachment_removes_its_enhancements(): void
     {
         [$armyList, $entry] = $this->listWithEnhancedCaptain();
+        $previous = $armyList->detachments->sole();
         $newDetachment = Detachment::factory()->for($this->faction)->create();
 
         $this->actingAs($this->user)->put(route('army-lists.update', $armyList), [
             'name' => $armyList->name,
             'faction_id' => $this->faction->id,
-            'detachment_id' => $newDetachment->id,
+            'detachment_ids' => [$previous->id, $newDetachment->id],
             'game_format_id' => $this->strikeForce->id,
-        ])->assertSessionHas('status', 'Liste mise à jour. 1 optimisation(s) de l\'ancien détachement retirée(s).');
+        ])->assertSessionHas('status', 'Liste mise à jour.');
+        $this->assertNotNull($entry->fresh()->enhancement_id, 'Adding a detachment keeps the enhancements of the others.');
+
+        $this->actingAs($this->user)->put(route('army-lists.update', $armyList), [
+            'name' => $armyList->name,
+            'faction_id' => $this->faction->id,
+            'detachment_ids' => [$newDetachment->id],
+            'game_format_id' => $this->strikeForce->id,
+        ])->assertSessionHas('status', 'Liste mise à jour. 1 optimisation(s) d\'un détachement retiré enlevée(s).');
 
         $this->assertNull($entry->fresh()->enhancement_id);
+        $this->assertSame([$newDetachment->id], $armyList->fresh()->detachments->modelKeys());
     }
 
     public function test_the_faction_of_a_list_with_units_cannot_change(): void
@@ -125,19 +139,26 @@ class ArmyListManagementTest extends TestCase
             ->assertSee('1 figurine(s) manquante(s)');
     }
 
-    public function test_a_list_is_duplicated_with_its_entries_and_lot_assignments(): void
+    public function test_a_list_is_duplicated_with_its_detachments_entries_attachments_and_lot_assignments(): void
     {
         [$armyList, $entry] = $this->listWithEnhancedCaptain();
         $lot = CollectionLot::factory()->for($this->user)->for($entry->unit)->create();
-        $entry->update(['collection_lot_id' => $lot->id]);
+        $squad = ArmyListEntry::factory()->for($armyList)->create();
+        $entry->update(['collection_lot_id' => $lot->id, 'attached_to_entry_id' => $squad->id]);
+        $entry->wargear()->create(['name' => 'Relic Shield', 'quantity' => 1]);
 
         $this->actingAs($this->user)->post(route('army-lists.duplicate', $armyList));
 
         $copy = $this->user->armyLists()->where('name', $armyList->name.' (copie)')->sole();
-        $this->assertSame(1, $copy->entries()->count());
-        $this->assertSame($lot->id, $copy->entries()->sole()->collection_lot_id);
-        $this->assertTrue($copy->entries()->sole()->is_warlord);
-        $this->assertSame(1, $armyList->entries()->count());
+        $copiedCaptain = $copy->entries()->where('unit_id', $entry->unit_id)->sole();
+        $copiedSquad = $copy->entries()->where('unit_id', $squad->unit_id)->sole();
+
+        $this->assertSame($armyList->detachments->modelKeys(), $copy->detachments->modelKeys());
+        $this->assertSame($lot->id, $copiedCaptain->collection_lot_id);
+        $this->assertTrue($copiedCaptain->is_warlord);
+        $this->assertSame($copiedSquad->id, $copiedCaptain->attached_to_entry_id);
+        $this->assertSame(['Relic Shield' => 1], $copiedCaptain->wargear()->pluck('quantity', 'name')->all());
+        $this->assertSame(2, $armyList->entries()->count());
     }
 
     public function test_the_text_export_lists_units_points_and_enhancements(): void
@@ -189,9 +210,9 @@ class ArmyListManagementTest extends TestCase
         $armyList = ArmyList::factory()->for($this->user)->create([
             'name' => 'Liste de test',
             'faction_id' => $this->faction->id,
-            'detachment_id' => $detachment->id,
             'game_format_id' => $this->strikeForce->id,
         ]);
+        $armyList->syncDetachments([$detachment->id]);
         $entry = ArmyListEntry::factory()->for($armyList)->for($captain)->create([
             'model_count' => 1,
             'enhancement_id' => $enhancement->id,

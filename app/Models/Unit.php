@@ -70,6 +70,24 @@ class Unit extends Model
     }
 
     /**
+     * @return HasMany<UnitWargearCost, $this>
+     */
+    public function wargearCosts(): HasMany
+    {
+        return $this->hasMany(UnitWargearCost::class);
+    }
+
+    /**
+     * Bodyguard units this Leader or Support unit can be attached to.
+     *
+     * @return HasMany<UnitAttachment, $this>
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(UnitAttachment::class, 'leader_unit_id');
+    }
+
+    /**
      * Lots of other units played as this one (proxies).
      *
      * @return HasMany<CollectionLot, $this>

@@ -102,7 +102,7 @@ class DetachmentManagementTest extends TestCase
     public function test_a_detachment_used_by_a_list_cannot_be_deleted(): void
     {
         $detachment = Detachment::factory()->for($this->faction)->create();
-        ArmyList::factory()->create(['faction_id' => $this->faction->id, 'detachment_id' => $detachment->id]);
+        ArmyList::factory()->create(['faction_id' => $this->faction->id])->syncDetachments([$detachment->id]);
 
         $this->actingAs($this->user)->delete(route('detachments.destroy', $detachment))->assertSessionHasErrors('detachment');
         $this->assertModelExists($detachment);
