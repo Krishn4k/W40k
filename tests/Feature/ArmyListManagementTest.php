@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ForceDisposition;
 use App\Enums\UnitRole;
 use App\Models\ArmyList;
 use App\Models\ArmyListEntry;
@@ -41,7 +42,7 @@ class ArmyListManagementTest extends TestCase
 
     public function test_a_list_is_created_with_several_detachments_and_shown(): void
     {
-        $gladius = Detachment::factory()->for($this->faction)->create(['name' => ['en' => 'Gladius Task Force'], 'detachment_points' => 2]);
+        $gladius = Detachment::factory()->for($this->faction)->create(['name' => ['en' => 'Gladius Task Force'], 'detachment_points' => 2, 'force_dispositions' => ['TAKE AND HOLD']]);
         $ironstorm = Detachment::factory()->for($this->faction)->create(['name' => ['en' => 'Ironstorm Spearhead'], 'detachment_points' => 1]);
 
         $this->actingAs($this->user)->get(route('army-lists.create'))->assertOk()->assertSee('Gladius Task Force');
@@ -51,19 +52,33 @@ class ArmyListManagementTest extends TestCase
             'faction_id' => $this->faction->id,
             'detachment_ids' => [$gladius->id, $ironstorm->id],
             'game_format_id' => $this->strikeForce->id,
+            'force_disposition' => ForceDisposition::TakeAndHold->value,
         ]);
 
         $armyList = $this->user->armyLists()->sole();
         $response->assertRedirect(route('army-lists.show', $armyList));
         $this->assertSame([$gladius->id, $ironstorm->id], $armyList->detachments->modelKeys());
+        $this->assertSame(ForceDisposition::TakeAndHold, $armyList->force_disposition);
+        $this->assertSame([ForceDisposition::TakeAndHold], $armyList->availableForceDispositions());
         $this->actingAs($this->user)->get(route('army-lists.show', $armyList))
             ->assertOk()
             ->assertSee('Tournoi de novembre')
             ->assertSee('Gladius Task Force + Ironstorm Spearhead')
             ->assertSee('3 / 3 DP')
+            ->assertSee('Disposition : Tenir et contrôler')
             ->assertSee('0')
             ->assertSee('/ 2000 pts')
             ->assertSee('Ajouter une unité');
+    }
+
+    public function test_an_unknown_force_disposition_is_refused(): void
+    {
+        $this->actingAs($this->user)->post(route('army-lists.store'), [
+            'name' => 'Liste',
+            'faction_id' => $this->faction->id,
+            'game_format_id' => $this->strikeForce->id,
+            'force_disposition' => 'world_domination',
+        ])->assertSessionHasErrors('force_disposition');
     }
 
     public function test_the_detachment_must_be_available_to_the_faction(): void

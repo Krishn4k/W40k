@@ -35,6 +35,9 @@
             @if ($game->detachment)
                 <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $game->detachment->name }}</p>
             @endif
+            @if ($game->force_disposition)
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Disposition : {{ $game->force_disposition->label() }} ({{ $game->force_disposition->englishName() }})</p>
+            @endif
             @if ($game->list_name)
                 <p class="mt-2 text-sm">
                     Liste « {{ $game->list_name }} » — {{ $game->list_points }} pts
@@ -50,6 +53,9 @@
             <h2 class="mb-2 font-semibold">Adversaire</h2>
             <p>{{ $game->opponent_name ?? 'Non renseigné' }}</p>
             <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $game->opponentFaction?->fullName() ?? 'Faction non renseignée' }}</p>
+            @if ($game->opponent_force_disposition)
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Disposition : {{ $game->opponent_force_disposition->label() }} ({{ $game->opponent_force_disposition->englishName() }})</p>
+            @endif
         </section>
     </div>
 

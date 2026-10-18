@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ForceDisposition;
 use App\Models\ArmyList;
 use App\Models\Faction;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -34,6 +35,7 @@ class ArmyListRequest extends FormRequest
             'detachment_ids' => ['nullable', 'array', 'max:10'],
             'detachment_ids.*' => ['integer', 'distinct'],
             'game_format_id' => ['required', 'integer', Rule::exists('game_formats', 'id')],
+            'force_disposition' => ['nullable', Rule::enum(ForceDisposition::class)],
             'point_set_id' => ['nullable', 'integer', Rule::exists('point_sets', 'id')],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];

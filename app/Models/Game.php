@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ForceDisposition;
 use App\Enums\GameResult;
 use App\Support\ArmyListAnalysis;
 use App\Support\ArmyListTextExport;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'user_id', 'played_on', 'army_list_id', 'list_name', 'faction_id', 'detachment_id', 'list_points', 'list_snapshot',
-    'opponent_name', 'opponent_faction_id', 'mission', 'result', 'score_for', 'score_against', 'notes',
+    'force_disposition', 'opponent_name', 'opponent_faction_id', 'opponent_force_disposition', 'mission', 'result', 'score_for', 'score_against', 'notes',
 ])]
 class Game extends Model
 {
@@ -33,6 +34,8 @@ class Game extends Model
         return [
             'played_on' => 'date',
             'result' => GameResult::class,
+            'force_disposition' => ForceDisposition::class,
+            'opponent_force_disposition' => ForceDisposition::class,
             'list_points' => 'integer',
             'score_for' => 'integer',
             'score_against' => 'integer',
@@ -81,6 +84,18 @@ class Game extends Model
     public function opponentFaction(): BelongsTo
     {
         return $this->belongsTo(Faction::class, 'opponent_faction_id');
+    }
+
+    /**
+     * Primary mission given by both players' force dispositions, null until both are known.
+     *
+     * @return array{en: string, fr: string}|null
+     */
+    public function primaryMission(): ?array
+    {
+        return $this->force_disposition && $this->opponent_force_disposition
+            ? $this->force_disposition->primaryMissionAgainst($this->opponent_force_disposition)
+            : null;
     }
 
     /**

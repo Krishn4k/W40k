@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ForceDisposition;
 use App\Enums\GameResult;
 use App\Enums\UnitRole;
 use App\Models\ArmyList;
@@ -43,6 +44,33 @@ class GameManagementTest extends TestCase
             Detachment::factory()->for($faction)->create(['name' => ['en' => 'Ironstorm Spearhead']])->id,
         ]);
         ArmyListEntry::factory()->for($this->armyList)->for($captain)->create(['model_count' => 1, 'is_warlord' => true]);
+    }
+
+    public function test_force_dispositions_are_recorded_and_give_the_primary_mission(): void
+    {
+        $this->armyList->update(['force_disposition' => ForceDisposition::TakeAndHold]);
+
+        $this->actingAs($this->user)->get(route('games.create', ['army_list_id' => $this->armyList->id]))
+            ->assertOk()
+            ->assertSee('Immovable Object (Objet inébranlable)', false);
+
+        $this->actingAs($this->user)->post(route('games.store'), [
+            'played_on' => today()->toDateString(),
+            'army_list_id' => $this->armyList->id,
+            'force_disposition' => ForceDisposition::TakeAndHold->value,
+            'opponent_force_disposition' => ForceDisposition::PurgeTheFoe->value,
+            'mission' => 'Immovable Object (Objet inébranlable)',
+            'result' => GameResult::Loss->value,
+        ])->assertSessionHasNoErrors();
+
+        $game = $this->user->games()->sole();
+        $this->assertSame(ForceDisposition::PurgeTheFoe, $game->opponent_force_disposition);
+        $this->assertSame(['en' => 'Immovable Object', 'fr' => 'Objet inébranlable'], $game->primaryMission());
+
+        $this->actingAs($this->user)->get(route('games.show', $game))
+            ->assertOk()
+            ->assertSee('Disposition : Tenir et contrôler (Take and Hold)')
+            ->assertSee('Disposition : Purger l\'ennemi (Purge the Foe)');
     }
 
     public function test_a_game_keeps_a_copy_of_the_list_as_played(): void

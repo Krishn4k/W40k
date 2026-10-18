@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ForceDisposition;
 use App\Enums\GameResult;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,6 +35,8 @@ class GameRequest extends FormRequest
             'refresh_snapshot' => ['boolean'],
             'opponent_name' => ['nullable', 'string', 'max:255'],
             'opponent_faction_id' => ['nullable', 'integer', Rule::exists('factions', 'id')],
+            'force_disposition' => ['nullable', Rule::enum(ForceDisposition::class)],
+            'opponent_force_disposition' => ['nullable', Rule::enum(ForceDisposition::class)],
             'mission' => ['nullable', 'string', 'max:255'],
             'result' => ['required', Rule::enum(GameResult::class)],
             'score_for' => ['nullable', 'integer', 'min:0', 'max:999'],
@@ -53,6 +56,8 @@ class GameRequest extends FormRequest
             'opponent_name' => 'adversaire',
             'opponent_faction_id' => 'faction adverse',
             'mission' => 'mission',
+            'force_disposition' => 'ma disposition de force',
+            'opponent_force_disposition' => 'disposition de force adverse',
             'result' => 'résultat',
             'score_for' => 'mon score',
             'score_against' => 'score adverse',

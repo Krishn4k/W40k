@@ -342,6 +342,10 @@ final class ArmyListAnalysis
                 ->values()
                 ->all(),
             'requires_detachment' => $this->armyList->detachments->isEmpty() ? ['Aucun détachement choisi.'] : [],
+            'force_disposition_from_detachments' => $this->armyList->force_disposition !== null
+                && ! in_array($this->armyList->force_disposition, $this->armyList->availableForceDispositions(), true)
+                ? [$this->armyList->force_disposition->label().' ('.$this->armyList->force_disposition->englishName().')']
+                : [],
             'max_detachment_points' => $this->detachmentPointsProblems($parameters),
             'unique_detachment_tags' => $this->armyList->detachments
                 ->whereNotNull('unique_tag')

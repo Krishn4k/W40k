@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ForceDisposition;
 use App\Enums\UnitRole;
 use App\Http\Requests\ArmyListRequest;
 use App\Models\ArmyList;
@@ -174,11 +175,19 @@ class ArmyListController extends Controller
                         'name' => (string) $detachment->name,
                         'points' => $detachment->detachment_points,
                         'uniqueTag' => $detachment->unique_tag,
+                        'forceDispositions' => collect($detachment->force_dispositions ?? [])
+                            ->map(fn (string $name): ?string => ForceDisposition::fromMfm($name)?->value)
+                            ->filter()
+                            ->values()
+                            ->all(),
                     ])
                     ->sortBy('name')
                     ->values()
                     ->all(),
             ])->all(),
+            'forceDispositions' => collect(ForceDisposition::cases())
+                ->map(fn (ForceDisposition $disposition): array => ['value' => $disposition->value, 'label' => $disposition->label().' ('.$disposition->englishName().')'])
+                ->all(),
             'selectedDetachmentIds' => array_map('intval', (array) old('detachment_ids', $armyList->exists ? $armyList->detachments->modelKeys() : [])),
             'gameFormats' => $gameFormats = GameFormat::query()->with('compositionRules')->orderBy('points_limit')->get(),
             'detachmentPointLimits' => $gameFormats->mapWithKeys(fn (GameFormat $format): array => [

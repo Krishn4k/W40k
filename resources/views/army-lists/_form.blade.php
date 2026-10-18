@@ -14,6 +14,8 @@
          selectedIds: @js($selectedDetachmentIds),
          detachmentsByFaction: @js($detachmentsByFaction),
          pointLimits: @js($detachmentPointLimits),
+         forceDispositions: @js($forceDispositions),
+         forceDisposition: @js((string) old('force_disposition', $armyList->force_disposition?->value)),
      })"
      class="flex flex-col gap-4">
     <div class="grid gap-4 sm:grid-cols-2">
@@ -76,6 +78,20 @@
             <p class="form-error">{{ $message }}</p>
         @enderror
     </fieldset>
+
+    <div>
+        <label for="force_disposition" class="form-label">Disposition de force</label>
+        <select id="force_disposition" name="force_disposition" x-model="forceDisposition" class="form-input">
+            <option value="">À choisir plus tard</option>
+            <template x-for="disposition in availableDispositions" :key="disposition.value">
+                <option :value="disposition.value" :selected="disposition.value === forceDisposition" x-text="disposition.label"></option>
+            </template>
+        </select>
+        <p class="form-help">Accordée par un des détachements choisis ; elle décide de la mission primaire en tournoi.</p>
+        @error('force_disposition')
+            <p class="form-error">{{ $message }}</p>
+        @enderror
+    </div>
 </div>
 
 <div class="grid gap-4 sm:grid-cols-2">

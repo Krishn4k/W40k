@@ -159,7 +159,7 @@ L'anglais est la langue de référence, et une autre langue s'ajoute sans migrat
 | `collection_lots` | `user_id`, `unit_id`, `counts_as_unit_id` (proxy, nullable), `label`, `quantity`, `notes` |
 | `lot_status_counts` | `collection_lot_id`, `status`, `count` (somme des `count` = `quantity`) |
 | `lot_photos` | `collection_lot_id`, `path`, `caption`, `position` |
-| `army_lists` | `user_id`, `name`, `faction_id`, `game_format_id`, `point_set_id` (nullable = version en vigueur) |
+| `army_lists` | `user_id`, `name`, `faction_id`, `game_format_id`, `force_disposition` (nullable, enum `ForceDisposition`), `point_set_id` (nullable = version en vigueur) |
 | `army_list_detachments` | `army_list_id`, `detachment_id`, `position` (11e édition : plusieurs détachements) |
 | `army_list_entries` | `army_list_id`, `unit_id`, `model_count`, `collection_lot_id` (nullable, unique par liste), `enhancement_id`, `attached_to_entry_id` (Leader / Support rattaché), `is_warlord`, `position` |
 | `army_list_entry_wargear` | `army_list_entry_id`, `name`, `quantity` (équipement payant) |
@@ -181,6 +181,7 @@ Les règles de portée faction (et faction mère) ou détachement s'appliquent a
 |---|---|---|
 | `max_points` | — | Total ≤ `points_limit` du format |
 | `requires_detachment` | — | Au moins un détachement |
+| `force_disposition_from_detachments` | — | La disposition de force choisie est accordée par un des détachements |
 | `max_detachment_points` | `max`, `single_max` | DP dépensés ≤ `max`, sauf un détachement seul jusqu'à `single_max` (Incursion : un détachement à 3 DP) |
 | `unique_detachment_tags` | — | Pas deux détachements avec le même tag « Unique » |
 | `max_unit_copies` | `default`, `battleline`, `dedicated_transport`, `epic_hero` | Nombre maximal d'exemplaires d'une même unité selon son rôle |
@@ -232,7 +233,7 @@ La réinitialisation de mot de passe réutilise `password_reset_tokens` (lien g�
 
 | Table | Colonnes clés |
 |---|---|
-| `games` | `user_id`, `played_on`, `army_list_id` (nullable, mis à NULL si la liste est supprimée), copie de la liste : `list_name`, `faction_id`, `detachment_id`, `list_points`, `list_snapshot` (export texte) ; `opponent_name`, `opponent_faction_id`, `mission`, `result` (`win` / `draw` / `loss`), `score_for`, `score_against`, `notes` |
+| `games` | `user_id`, `played_on`, `army_list_id` (nullable, mis à NULL si la liste est supprimée), copie de la liste : `list_name`, `faction_id`, `detachment_id`, `list_points`, `list_snapshot` (export texte), `force_disposition` ; `opponent_name`, `opponent_faction_id`, `opponent_force_disposition`, `mission`, `result` (`win` / `draw` / `loss`), `score_for`, `score_against`, `notes` |
 
 La copie est prise quand la liste est choisie ou changée, ou sur demande (« Remplacer la copie ») :
 une liste modifiée ou supprimée plus tard ne change pas l'historique.
@@ -304,6 +305,9 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Règles V11 : DP, tags Unique, limites par format, Upgrades, Leader / Support, une optimisation par unité rattachée
 - [x] Formulaire d'unité : optimisations de tous les détachements choisis, Upgrades pour les non-Personnages,
   rattachement à une unité de la liste, quantités d'équipement payant
+- [x] Disposition de force choisie sur la liste (parmi celles des détachements cochés) et reprise dans la partie
+- [x] Partie : dispositions des deux joueurs, mission primaire déduite (Event Companion 1.3) dans le champ Mission, modifiable
+- [ ] Relecture des noms français des dispositions et des 25 missions primaires (proposés par l'assistant, à vérifier)
 - [ ] Limites officielles V11 du format Onslaught (absentes du MFM 1.5 : reprises de Strike Force, sans limite de DP)
 ### Phase 6 : Authentification multi-utilisateur
 - [x] Rôle administrateur (`is_admin`), référentiel modifiable par les admins seulement, lecture pour tous
@@ -387,9 +391,14 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Plusieurs détachements par liste (table pivot), la partie garde le premier comme détachement principal | Règle V11 ; les statistiques par détachement restent simples. |
 | 2026-10-18 | Prix par rang d'exemplaire (`from_copy`) calculé dans l'ordre de la liste | Reproduit les seuils de réquisition sans stocker de prix figé. |
 | 2026-10-18 | Règles V11 non bloquantes (rapport d'analyse), seules les contraintes dures (disponibilité, rattachement dans la liste, équipement connu) sont validées | Même principe que les règles existantes : un brouillon peut être non conforme. |
+| 2026-10-18 | Dispositions de force et missions primaires en code (enum `ForceDisposition` + table des 15 paires) plutôt qu'en base | 5 valeurs et 15 paires fixées par le deck de missions ; elles ne changent qu'avec un nouveau Chapter Approved. |
+| 2026-10-18 | Mission déduite écrite dans le champ texte Mission (« Immovable Object (Objet inébranlable) ») sans écraser une saisie libre | Les parties existantes et les missions hors tournoi restent saisissables ; pas de nouvelle colonne. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
+
+- Missions primaires : dans une paire « A / B » de l'Event Companion, la mission A est attribuée au joueur
+  de la première disposition (lecture de la mise en page des cartes, à confirmer dans l'appli).
 
 - Moteur de contraintes : pas encore d'écran pour saisir des règles de faction ou de détachement (seeders
   uniquement). Les unités qui doivent être Seigneur de guerre et les règles de détachement ne sont pas gérées.

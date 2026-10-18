@@ -14,6 +14,9 @@
                 @if ($armyList->detachments->isNotEmpty())
                     ({{ $analysis->detachmentPoints() }}{{ $analysis->detachmentPointsLimit() !== null ? ' / '.$analysis->detachmentPointsLimit() : '' }} DP)
                 @endif
+                @if ($armyList->force_disposition)
+                    · Disposition : {{ $armyList->force_disposition->label() }}
+                @endif
                 · {{ $armyList->gameFormat->name }}
                 · {{ $analysis->pointSet ? 'Points : '.$analysis->pointSet->name.($armyList->point_set_id ? ' (figée)' : '') : 'Aucune version de points' }}
             </p>

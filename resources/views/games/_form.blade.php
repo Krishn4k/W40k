@@ -36,10 +36,19 @@
     </div>
 </div>
 
-<div x-data="{ armyListId: @js((string) old('army_list_id', $game->army_list_id)) }" class="grid gap-4 sm:grid-cols-2">
+<div x-data="gameDispositions({
+         armyListId: @js((string) old('army_list_id', $game->army_list_id)),
+         forceDisposition: @js((string) old('force_disposition', $game->force_disposition?->value)),
+         opponentForceDisposition: @js((string) old('opponent_force_disposition', $game->opponent_force_disposition?->value)),
+         mission: @js((string) old('mission', $game->mission)),
+         listDispositions: @js($listDispositions),
+         primaryMissions: @js($primaryMissions),
+     })"
+     class="flex flex-col gap-4">
+<div class="grid gap-4 sm:grid-cols-3">
     <div>
         <label for="army_list_id" class="form-label">Liste jouée</label>
-        <select id="army_list_id" name="army_list_id" x-model="armyListId" class="form-input">
+        <select id="army_list_id" name="army_list_id" x-model="armyListId" @change="listChanged()" class="form-input">
             <option value="">Aucune</option>
             @foreach ($armyLists as $armyList)
                 <option value="{{ $armyList->id }}" @selected((string) old('army_list_id', $game->army_list_id) === (string) $armyList->id)>{{ $armyList->name }} ({{ $armyList->faction->fullName() }})</option>
@@ -69,9 +78,21 @@
             <p class="form-error">{{ $message }}</p>
         @enderror
     </div>
+    <div>
+        <label for="force_disposition" class="form-label">Ma disposition de force</label>
+        <select id="force_disposition" name="force_disposition" x-model="forceDisposition" @change="dispositionsChanged()" class="form-input">
+            <option value="">—</option>
+            @foreach (App\Enums\ForceDisposition::cases() as $disposition)
+                <option value="{{ $disposition->value }}" @selected(old('force_disposition', $game->force_disposition?->value) === $disposition->value)>{{ $disposition->label() }} ({{ $disposition->englishName() }})</option>
+            @endforeach
+        </select>
+        @error('force_disposition')
+            <p class="form-error">{{ $message }}</p>
+        @enderror
+    </div>
 </div>
 
-<div class="grid gap-4 sm:grid-cols-3">
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <div>
         <label for="opponent_name" class="form-label">Adversaire</label>
         <input id="opponent_name" name="opponent_name" type="text" maxlength="255" value="{{ old('opponent_name', $game->opponent_name) }}" class="form-input">
@@ -92,12 +113,26 @@
         @enderror
     </div>
     <div>
+        <label for="opponent_force_disposition" class="form-label">Disposition adverse</label>
+        <select id="opponent_force_disposition" name="opponent_force_disposition" x-model="opponentForceDisposition" @change="dispositionsChanged()" class="form-input">
+            <option value="">—</option>
+            @foreach (App\Enums\ForceDisposition::cases() as $disposition)
+                <option value="{{ $disposition->value }}" @selected(old('opponent_force_disposition', $game->opponent_force_disposition?->value) === $disposition->value)>{{ $disposition->label() }} ({{ $disposition->englishName() }})</option>
+            @endforeach
+        </select>
+        @error('opponent_force_disposition')
+            <p class="form-error">{{ $message }}</p>
+        @enderror
+    </div>
+    <div>
         <label for="mission" class="form-label">Mission</label>
-        <input id="mission" name="mission" type="text" maxlength="255" value="{{ old('mission', $game->mission) }}" class="form-input">
+        <input id="mission" name="mission" type="text" maxlength="255" x-model="mission" class="form-input">
+        <p class="form-help" x-show="deducedMission">Mission primaire déduite des deux dispositions (modifiable).</p>
         @error('mission')
             <p class="form-error">{{ $message }}</p>
         @enderror
     </div>
+</div>
 </div>
 
 <div>

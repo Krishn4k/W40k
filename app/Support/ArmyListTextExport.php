@@ -20,6 +20,7 @@ final class ArmyListTextExport
             implode(' · ', array_filter([
                 'Faction : '.$armyList->faction->fullName(),
                 $armyList->detachments->isNotEmpty() ? 'Détachement'.($armyList->detachments->count() > 1 ? 's' : '').' : '.$armyList->detachmentNames().' ('.$this->analysis->detachmentPoints().' DP)' : null,
+                $armyList->force_disposition ? 'Disposition de force : '.$armyList->force_disposition->label().' ('.$armyList->force_disposition->englishName().')' : null,
                 'Format : '.$armyList->gameFormat->name,
                 $this->analysis->pointSet ? 'Points : '.$this->analysis->pointSet->name : null,
             ])),

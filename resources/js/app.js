@@ -202,6 +202,15 @@ Alpine.data('detachmentPicker', (config) => ({
         return ! (this.selected.length === 1 && this.spentPoints <= (this.limit.single_max ?? this.limit.max));
     },
 
+    /**
+     * Dispositions de force accordées par les détachements cochés (celle déjà choisie reste proposée).
+     */
+    get availableDispositions() {
+        const granted = new Set(this.selected.flatMap((detachment) => detachment.forceDispositions ?? []));
+
+        return this.forceDispositions.filter((disposition) => granted.has(disposition.value) || disposition.value === this.forceDisposition);
+    },
+
     get tagConflicts() {
         const byTag = {};
         for (const detachment of this.selected.filter((detachment) => detachment.uniqueTag)) {
@@ -209,6 +218,35 @@ Alpine.data('detachmentPicker', (config) => ({
         }
 
         return Object.entries(byTag).filter(([, names]) => names.length > 1).map(([tag, names]) => `${tag} (${names.join(', ')})`);
+    },
+}));
+
+/**
+ * Saisie d'une partie : la disposition de force de la liste choisie est reprise, et la mission primaire
+ * déduite des deux dispositions remplit le champ Mission tant qu'il est vide ou qu'il contient une mission déduite.
+ */
+Alpine.data('gameDispositions', (config) => ({
+    ...config,
+
+    get deducedMission() {
+        return this.primaryMissions[this.forceDisposition]?.[this.opponentForceDisposition] ?? '';
+    },
+
+    isDeducedMission(text) {
+        return Object.values(this.primaryMissions).some((missions) => Object.values(missions).includes(text));
+    },
+
+    listChanged() {
+        if (this.listDispositions[this.armyListId]) {
+            this.forceDisposition = this.listDispositions[this.armyListId];
+            this.dispositionsChanged();
+        }
+    },
+
+    dispositionsChanged() {
+        if (this.deducedMission && (this.mission.trim() === '' || this.isDeducedMission(this.mission))) {
+            this.mission = this.deducedMission;
+        }
     },
 }));
 

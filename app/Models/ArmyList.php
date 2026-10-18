@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ForceDisposition;
 use Database\Factories\ArmyListFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,11 +11,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'name', 'faction_id', 'game_format_id', 'point_set_id', 'notes'])]
+#[Fillable(['user_id', 'name', 'faction_id', 'game_format_id', 'force_disposition', 'point_set_id', 'notes'])]
 class ArmyList extends Model
 {
     /** @use HasFactory<ArmyListFactory> */
     use HasFactory;
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'force_disposition' => ForceDisposition::class,
+        ];
+    }
 
     /**
      * @return BelongsTo<User, $this>
@@ -60,6 +73,21 @@ class ArmyList extends Model
     public function detachmentNames(): string
     {
         return $this->detachments->map(fn (Detachment $detachment): string => (string) $detachment->name)->join(' + ');
+    }
+
+    /**
+     * Force dispositions granted by the selected detachments, in game order.
+     *
+     * @return list<ForceDisposition>
+     */
+    public function availableForceDispositions(): array
+    {
+        $granted = $this->detachments
+            ->flatMap(fn (Detachment $detachment): array => $detachment->force_dispositions ?? [])
+            ->map(fn (string $name): ?ForceDisposition => ForceDisposition::fromMfm($name))
+            ->filter();
+
+        return array_values(array_filter(ForceDisposition::cases(), fn (ForceDisposition $disposition): bool => $granted->contains($disposition)));
     }
 
     /**

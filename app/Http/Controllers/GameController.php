@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ForceDisposition;
 use App\Enums\GameResult;
 use App\Http\Requests\GameRequest;
 use App\Models\ArmyList;
@@ -34,9 +35,12 @@ class GameController extends Controller
 
     public function create(Request $request): View
     {
+        $armyList = $request->user()->armyLists()->find($request->integer('army_list_id'));
+
         return view('games.create', $this->formData($request, new Game([
             'played_on' => today(),
-            'army_list_id' => $request->integer('army_list_id') ?: null,
+            'army_list_id' => $armyList?->id,
+            'force_disposition' => $armyList?->force_disposition,
             'result' => GameResult::Win,
         ])));
     }
@@ -114,7 +118,15 @@ class GameController extends Controller
     {
         return [
             'game' => $game,
-            'armyLists' => $request->user()->armyLists()->with('faction.parent')->latest('updated_at')->get(),
+            'armyLists' => $armyLists = $request->user()->armyLists()->with('faction.parent')->latest('updated_at')->get(),
+            'listDispositions' => $armyLists->mapWithKeys(fn (ArmyList $armyList): array => [$armyList->id => $armyList->force_disposition?->value])->filter()->all(),
+            'primaryMissions' => collect(ForceDisposition::cases())->mapWithKeys(fn (ForceDisposition $disposition): array => [
+                $disposition->value => collect(ForceDisposition::cases())->mapWithKeys(function (ForceDisposition $opponent) use ($disposition): array {
+                    $mission = $disposition->primaryMissionAgainst($opponent);
+
+                    return [$opponent->value => "{$mission['en']} ({$mission['fr']})"];
+                })->all(),
+            ])->all(),
             'factionOptions' => Faction::query()->with('parent')->get()
                 ->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])
                 ->sort()

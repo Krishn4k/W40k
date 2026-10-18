@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ForceDisposition;
 use App\Enums\PaintStatus;
 use App\Enums\UnitRole;
 use App\Models\ArmyList;
@@ -195,6 +196,16 @@ class ArmyListAnalysisTest extends TestCase
 
         $this->armyList->syncDetachments([]);
         $this->assertViolation('requires_detachment', ['Aucun détachement choisi.']);
+    }
+
+    public function test_the_force_disposition_must_come_from_a_selected_detachment(): void
+    {
+        $this->detachment->update(['force_dispositions' => ['TAKE AND HOLD', 'PRIORITY ASSETS']]);
+        $this->armyList->update(['force_disposition' => ForceDisposition::PriorityAssets]);
+        $this->assertNotContains('force_disposition_from_detachments', $this->violationTypes());
+
+        $this->armyList->update(['force_disposition' => ForceDisposition::Reconnaissance]);
+        $this->assertViolation('force_disposition_from_detachments', ['Reconnaissance (Reconnaissance)']);
     }
 
     public function test_upgrades_go_to_any_unit_up_to_three_times_and_count_once(): void

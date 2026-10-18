@@ -67,6 +67,14 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
+                'rule_type' => 'force_disposition_from_detachments',
+                'parameters' => null,
+                'message' => [
+                    'en' => 'The force disposition must be granted by one of the selected detachments.',
+                    'fr' => 'La disposition de force doit être accordée par un des détachements choisis.',
+                ],
+            ],
+            [
                 'rule_type' => 'unique_detachment_tags',
                 'parameters' => null,
                 'message' => [
