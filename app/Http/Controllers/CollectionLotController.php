@@ -7,6 +7,7 @@ use App\Http\Requests\CollectionLotRequest;
 use App\Models\CollectionLot;
 use App\Models\Faction;
 use App\Models\Unit;
+use App\Support\UnitSelectOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -119,19 +120,12 @@ class CollectionLotController extends Controller
     }
 
     /**
-     * Units grouped by faction display name, for select optgroups.
+     * Every unit, for the filterable selects (grouped by faction, Legends hidden by default).
      *
-     * @return array<string, array<int, string>>
+     * @return list<array{value: int, label: string, group: string, legends: bool, search: string}>
      */
     private function unitOptions(): array
     {
-        return Unit::query()
-            ->with('faction.parent')
-            ->orderByName()
-            ->get()
-            ->groupBy(fn (Unit $unit): string => $unit->faction->fullName())
-            ->sortKeys()
-            ->map(fn ($units): array => $units->mapWithKeys(fn (Unit $unit): array => [$unit->id => (string) $unit->name])->all())
-            ->all();
+        return UnitSelectOptions::from(Unit::query()->with('faction.parent')->get());
     }
 }

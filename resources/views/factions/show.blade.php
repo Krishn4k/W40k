@@ -42,8 +42,12 @@
 
     <section class="mb-8">
         <h2 class="mb-3 text-lg font-semibold">Unités disponibles ({{ $units->count() }})</h2>
+        <form method="GET" action="{{ route('factions.show', $faction) }}" class="mb-4 flex flex-wrap items-end gap-4">
+            @include('units._filters')
+            <button type="submit" class="btn-secondary">Filtrer</button>
+        </form>
         @if ($units->isEmpty())
-            <p class="card text-zinc-600 dark:text-zinc-400">Aucune unité.</p>
+            <p class="card text-zinc-600 dark:text-zinc-400">Aucune unité ne correspond.</p>
         @else
             @include('units._table', ['units' => $units, 'currentFaction' => $faction])
         @endif

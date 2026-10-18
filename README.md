@@ -249,6 +249,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Tableau de bord de progression
 - [x] Authentification (connexion, déconnexion) et paramètres (seuil de jouabilité)
 - [x] Gestion des détachements et optimisations, et des versions de points (copie des coûts)
+- [x] Recherche par nom (FR ou EN) et Légendes masquées par défaut : listes d'unités du référentiel, page faction, et listes déroulantes d'unités (collection, proxy, listes d'armée)
 
 ### Phase 3 : Listes d'armée
 - [x] Création et édition de listes (format, faction, détachement)
@@ -341,6 +342,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Mot de passe oublié : lien généré par un admin (broker Laravel), changement dans les paramètres | Aucun e-mail requis en local. |
 | 2026-10-18 | Traductions : fichier CSV versionné + écran d'administration + pré-remplissage par l'assistant marqué « à vérifier » | Travail en masse au tableur, conservé entre installations et réimports ; corrections ponctuelles dans l'appli. |
 | 2026-10-18 | Statut « à vérifier » dans une table polymorphe `translation_reviews` | Aucune modification des tables existantes ; ne stocke que les exceptions. |
+| 2026-10-18 | Unités [Legends] masquées par défaut (case « Légendes » pour les afficher) ; une unité déjà choisie reste visible | 390 unités sur 1 495 sont hors format compétitif ; elles encombraient les listes. Repérées par « [Legends] » dans le nom anglais, sans colonne dédiée. |
+| 2026-10-18 | Listes déroulantes d'unités filtrées côté navigateur (Alpine), recherche sans accents sur les noms FR et EN | Réponse immédiate sans rechargement ; ~1 500 unités restent légères à transmettre. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

@@ -111,6 +111,52 @@ class Unit extends Model
     }
 
     /**
+     * Whether the unit is a Legends unit (outside the current rules, flagged "[Legends]" in its English name).
+     */
+    public function isLegends(): bool
+    {
+        return str_contains($this->name->get('en'), '[Legends]');
+    }
+
+    /**
+     * Exclude Legends units.
+     *
+     * @param  Builder<Unit>  $query
+     */
+    #[Scope]
+    protected function withoutLegends(Builder $query): void
+    {
+        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.en')) NOT LIKE ?", ['%[Legends]%']);
+    }
+
+    /**
+     * Units whose English or French name contains the given text, case-insensitively.
+     *
+     * @param  Builder<Unit>  $query
+     */
+    #[Scope]
+    protected function nameContains(Builder $query, string $text): void
+    {
+        $pattern = '%'.mb_strtolower($text).'%';
+
+        $query->where(fn (Builder $query) => $query
+            ->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.en'))) LIKE ?", [$pattern])
+            ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.fr'))) LIKE ?", [$pattern]));
+    }
+
+    /**
+     * Filters shared by unit listings: name search, Legends hidden unless asked for.
+     *
+     * @param  Builder<Unit>  $query
+     */
+    #[Scope]
+    protected function listingFilters(Builder $query, string $search, bool $withLegends): void
+    {
+        $query->when($search !== '', fn (Builder $query) => $query->nameContains($search))
+            ->unless($withLegends, fn (Builder $query) => $query->withoutLegends());
+    }
+
+    /**
      * Order units by their English (reference) name.
      *
      * @param  Builder<Unit>  $query

@@ -2,17 +2,14 @@
 
 <div class="grid gap-4 sm:grid-cols-2">
     <div>
-        <label for="unit_id" class="form-label">Unité</label>
-        <select id="unit_id" name="unit_id" required class="form-input">
-            <option value="">—</option>
-            @foreach ($unitOptions as $factionName => $units)
-                <optgroup label="{{ $factionName }}">
-                    @foreach ($units as $id => $name)
-                        <option value="{{ $id }}" @selected((string) old('unit_id', $lot->unit_id) === (string) $id)>{{ $name }}</option>
-                    @endforeach
-                </optgroup>
-            @endforeach
-        </select>
+        @include('partials.filterable-unit-select', [
+            'name' => 'unit_id',
+            'id' => 'unit_id',
+            'label' => 'Unité',
+            'options' => $unitOptions,
+            'selected' => old('unit_id', $lot->unit_id),
+            'required' => true,
+        ])
         @error('unit_id')
             <p class="form-error">{{ $message }}</p>
         @enderror
@@ -58,17 +55,14 @@
 <details @if (old('counts_as_unit_id', $lot->counts_as_unit_id)) open @endif>
     <summary class="cursor-pointer text-sm font-medium">Proxy / kitbash</summary>
     <div class="mt-2 max-w-md">
-        <label for="counts_as_unit_id" class="form-label">Joué comme</label>
-        <select id="counts_as_unit_id" name="counts_as_unit_id" class="form-input">
-            <option value="">Lui-même</option>
-            @foreach ($unitOptions as $factionName => $units)
-                <optgroup label="{{ $factionName }}">
-                    @foreach ($units as $id => $name)
-                        <option value="{{ $id }}" @selected((string) old('counts_as_unit_id', $lot->counts_as_unit_id) === (string) $id)>{{ $name }}</option>
-                    @endforeach
-                </optgroup>
-            @endforeach
-        </select>
+        @include('partials.filterable-unit-select', [
+            'name' => 'counts_as_unit_id',
+            'id' => 'counts_as_unit_id',
+            'label' => 'Joué comme',
+            'options' => $unitOptions,
+            'selected' => old('counts_as_unit_id', $lot->counts_as_unit_id),
+            'emptyLabel' => 'Lui-même',
+        ])
         <p class="form-help">Pour la jouabilité des listes, ce lot comptera comme l'unité choisie.</p>
         @error('counts_as_unit_id')
             <p class="form-error">{{ $message }}</p>

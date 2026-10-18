@@ -22,10 +22,13 @@ class UnitController extends Controller
     {
         $role = UnitRole::tryFrom((string) $request->query('role'));
         $factionId = $request->integer('faction') ?: null;
+        $search = trim((string) $request->query('q'));
+        $withLegends = $request->boolean('legendes');
 
         $units = Unit::query()
             ->when($factionId, fn ($query) => $query->where('faction_id', $factionId))
             ->when($role, fn ($query) => $query->where('role', $role))
+            ->listingFilters($search, $withLegends)
             ->withListingData(PointSet::current())
             ->orderByName()
             ->paginate(50)
@@ -36,6 +39,8 @@ class UnitController extends Controller
             'factionOptions' => $this->factionOptions(),
             'selectedFactionId' => $factionId,
             'selectedRole' => $role,
+            'search' => $search,
+            'withLegends' => $withLegends,
         ]);
     }
 

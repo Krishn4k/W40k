@@ -169,7 +169,7 @@ class ArmyListController extends Controller
     private function entryOptions(ArmyList $armyList, ?PointSet $pointSet): array
     {
         $units = $armyList->faction->availableUnits()
-            ->with(['pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')])
+            ->with(['faction.parent', 'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')])
             ->orderByName()
             ->get();
 
@@ -185,6 +185,9 @@ class ArmyListController extends Controller
             'units' => $units->map(fn (Unit $unit): array => [
                 'id' => $unit->id,
                 'name' => (string) $unit->name,
+                'group' => $unit->faction->fullName(),
+                'legends' => $unit->isLegends(),
+                'search' => mb_strtolower((string) $unit->name.' '.$unit->name->get('en')),
                 'canTakeEnhancement' => $unit->role === UnitRole::Character && ! $unit->is_epic_hero,
                 'squadSizes' => $unit->pointCosts->map(fn ($cost): array => ['modelCount' => $cost->model_count, 'points' => $cost->points])->values()->all(),
                 'lots' => $lotsByPlayedUnit->get($unit->id, collect())->map(fn (CollectionLot $lot): array => [

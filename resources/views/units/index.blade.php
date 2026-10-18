@@ -32,6 +32,7 @@
                 @endforeach
             </select>
         </div>
+        @include('units._filters')
         <button type="submit" class="btn-secondary">Filtrer</button>
     </form>
 

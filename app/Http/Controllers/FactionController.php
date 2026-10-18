@@ -6,6 +6,7 @@ use App\Http\Requests\FactionRequest;
 use App\Models\Faction;
 use App\Models\PointSet;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FactionController extends Controller
@@ -43,16 +44,24 @@ class FactionController extends Controller
     /**
      * Show a faction with its available units (own and inherited) and detachments.
      */
-    public function show(Faction $faction): View
+    public function show(Request $request, Faction $faction): View
     {
         $faction->load(['parent', 'subFactions', 'detachments.enhancements']);
+        $search = trim((string) $request->query('q'));
+        $withLegends = $request->boolean('legendes');
 
         $units = $faction->availableUnits()
+            ->listingFilters($search, $withLegends)
             ->withListingData(PointSet::current())
             ->orderByName()
             ->get();
 
-        return view('factions.show', ['faction' => $faction, 'units' => $units]);
+        return view('factions.show', [
+            'faction' => $faction,
+            'units' => $units,
+            'search' => $search,
+            'withLegends' => $withLegends,
+        ]);
     }
 
     public function edit(Faction $faction): View
