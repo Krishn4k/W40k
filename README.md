@@ -279,7 +279,9 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Écran d'administration des traductions (avancement, filtres, statut « à vérifier »)
 - [x] Pré-remplissage à vérifier : Necrons, Orks, Tyranides (unités, détachements, optimisations)
 - [x] Pré-remplissage à vérifier : Chaos Space Marines, Astra Militarum, Aeldari (dont Ynnari et Corsaires), Empire T'au
-- [ ] Relecture des 1 633 traductions pré-remplies ; factions restantes : Démons du Chaos, Death Guard, Thousand Sons, World Eaters, Emperor's Children, Chevaliers (Impériaux et du Chaos), Adepta Sororitas, Adeptus Custodes, Adeptus Mechanicus, Grey Knights, Agents de l'Imperium, Drukhari, Cultes Genestealers, Ligues de Votann, Titans, Forces non alignées, Légendes de l'Hérésie
+- [x] Pré-remplissage à vérifier de toutes les autres factions : 100 % des factions, unités, détachements et optimisations
+- [x] Mots-clés : 147 courants traduits à la main, 866 déduits du nom traduit de l'unité ou de la faction correspondante (1 013 / 1 594)
+- [ ] Relecture des 3 580 traductions « à vérifier » ; 581 mots-clés rares encore en anglais
 
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
