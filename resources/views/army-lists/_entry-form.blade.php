@@ -1,6 +1,7 @@
 {{--
     Formulaire d'ajout ou de modification d'une unité de la liste.
-    Attend $action, $entryOptions, et facultativement $entry (modification).
+    Attend $action, et facultativement $entry (modification). Les options (unités, optimisations…) sont lues
+    dans le bloc JSON #army-list-entry-options de la page.
 --}}
 @php
     $entry ??= null;
@@ -10,7 +11,7 @@
     $value = fn (string $field, mixed $default) => $isSubmittedForm ? old($field, $default) : $default;
 @endphp
 <form method="POST" action="{{ $action }}"
-      x-data="armyListEntryForm(@js($entryOptions), @js([
+      x-data="armyListEntryForm('army-list-entry-options', @js([
           'unitId' => $value('unit_id', $entry?->unit_id),
           'modelCount' => $value('model_count', $entry?->model_count),
           'enhancementId' => $value('enhancement_id', $entry?->enhancement_id),

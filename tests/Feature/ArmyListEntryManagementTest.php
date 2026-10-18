@@ -62,6 +62,17 @@ class ArmyListEntryManagementTest extends TestCase
         $this->assertSame(1, substr_count($page->getContent(), 'name="_method" value="PUT"'), 'Only the edit form of the existing unit uses PUT, not the add form.');
     }
 
+    public function test_the_entry_form_options_are_sent_once_whatever_the_number_of_units(): void
+    {
+        ArmyListEntry::factory()->count(5)->for($this->armyList)->for($this->intercessors)->create(['model_count' => 5]);
+
+        $page = $this->actingAs($this->user)->get(route('army-lists.show', $this->armyList))->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($page, 'id="army-list-entry-options"'));
+        $this->assertSame(1, substr_count($page, '"squadSizes"'), 'The unit options are shared by the 6 entry forms.');
+        $this->assertSame(6, substr_count($page, "armyListEntryForm('army-list-entry-options'"));
+    }
+
     public function test_the_squad_size_must_exist_in_the_point_set(): void
     {
         $this->actingAs($this->user)->post(route('army-lists.entries.store', $this->armyList), [

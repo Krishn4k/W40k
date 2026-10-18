@@ -9,12 +9,9 @@ use App\Models\ArmyListEntry;
 use App\Models\ArmyListEntryWargear;
 use App\Models\CompositionRule;
 use App\Models\Detachment;
-use App\Models\EnhancementPointCost;
 use App\Models\PointSet;
 use App\Models\UnitAttachment;
 use App\Models\UnitPointCost;
-use App\Models\UnitWargearCost;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -31,20 +28,7 @@ final class ArmyListAnalysis
 {
     public readonly ?PointSet $pointSet;
 
-    /**
-     * @var Collection<string, Collection<int, UnitPointCost>> Unit cost tiers keyed by "unit_id:model_count", by descending first copy.
-     */
-    private Collection $unitCosts;
-
-    /**
-     * @var Collection<int, EnhancementPointCost> Enhancement costs keyed by enhancement id.
-     */
-    private Collection $enhancementCosts;
-
-    /**
-     * @var Collection<string, UnitWargearCost> Wargear costs keyed by "unit_id:name".
-     */
-    private Collection $wargearCosts;
+    private readonly ArmyListReferenceData $referenceData;
 
     /**
      * @var array<int, int> Copy rank (1 for the first copy of a unit) by entry id.
@@ -52,63 +36,36 @@ final class ArmyListAnalysis
     private array $copyRanks = [];
 
     /**
-     * @var Collection<string, string> Allowed attachment kinds keyed by "leader_unit_id:bodyguard_unit_id".
-     */
-    private Collection $attachments;
-
-    /**
      * @var list<Violation>|null
      */
     private ?array $violations = null;
 
-    public function __construct(public readonly ArmyList $armyList)
+    /**
+     * @param  ArmyListReferenceData|null  $referenceData  Data shared with other lists' analyses, loaded for this list alone when null.
+     */
+    public function __construct(public readonly ArmyList $armyList, ?ArmyListReferenceData $referenceData = null)
     {
-        $armyList->loadMissing([
-            'user',
-            'faction.parent',
-            'detachments',
-            'gameFormat',
-            'pointSet',
-            'entries.unit',
-            'entries.enhancement',
-            'entries.wargear',
-            'entries.attachedTo.unit',
-            'entries.collectionLot.unit',
-            'entries.collectionLot.statusCounts',
-        ]);
-
-        $this->pointSet = $armyList->effectivePointSet();
-        $unitIds = $armyList->entries->pluck('unit_id')->unique();
-
-        $this->unitCosts = UnitPointCost::query()
-            ->where('point_set_id', $this->pointSet?->id)
-            ->whereIn('unit_id', $unitIds)
-            ->orderByDesc('from_copy')
-            ->get()
-            ->groupBy(fn (UnitPointCost $cost): string => $cost->unit_id.':'.$cost->model_count);
-
-        $this->enhancementCosts = EnhancementPointCost::query()
-            ->where('point_set_id', $this->pointSet?->id)
-            ->whereIn('enhancement_id', $armyList->entries->pluck('enhancement_id')->filter()->unique())
-            ->get()
-            ->keyBy('enhancement_id');
-
-        $this->wargearCosts = UnitWargearCost::query()
-            ->where('point_set_id', $this->pointSet?->id)
-            ->whereIn('unit_id', $unitIds)
-            ->get()
-            ->keyBy(fn (UnitWargearCost $cost): string => $cost->unit_id.':'.$cost->name);
-
-        $this->attachments = UnitAttachment::query()
-            ->whereIn('leader_unit_id', $unitIds)
-            ->get()
-            ->mapWithKeys(fn (UnitAttachment $attachment): array => [$attachment->leader_unit_id.':'.$attachment->bodyguard_unit_id => $attachment->kind]);
+        $this->referenceData = $referenceData ?? ArmyListReferenceData::load(collect([$armyList]));
+        $this->pointSet = $armyList->pointSet ?? $this->referenceData->currentPointSet;
 
         foreach ($armyList->entries->sortBy([['position', 'asc'], ['id', 'asc']])->groupBy('unit_id') as $copies) {
             foreach ($copies->values() as $index => $entry) {
                 $this->copyRanks[$entry->id] = $index + 1;
             }
         }
+    }
+
+    /**
+     * Analyses of several lists sharing one load of their reference data.
+     *
+     * @param  Collection<int, ArmyList>  $armyLists
+     * @return Collection<int, self>
+     */
+    public static function forLists(Collection $armyLists): Collection
+    {
+        $referenceData = ArmyListReferenceData::load($armyLists);
+
+        return $armyLists->map(fn (ArmyList $armyList): self => new self($armyList, $referenceData));
     }
 
     /**
@@ -124,14 +81,14 @@ final class ArmyListAnalysis
      */
     public function unitPoints(ArmyListEntry $entry): ?int
     {
-        return $this->unitCosts->get($entry->unit_id.':'.$entry->model_count)
-            ?->first(fn (UnitPointCost $cost): bool => $cost->from_copy <= $this->copyRank($entry))
+        return $this->referenceData->unitCostTiers($this->pointSet, $entry)
+            ->first(fn (UnitPointCost $cost): bool => $cost->from_copy <= $this->copyRank($entry))
             ?->points;
     }
 
     public function enhancementPoints(ArmyListEntry $entry): int
     {
-        return $entry->enhancement_id ? (int) $this->enhancementCosts->get($entry->enhancement_id)?->points : 0;
+        return $entry->enhancement_id ? (int) $this->referenceData->enhancementCost($this->pointSet, $entry->enhancement_id)?->points : 0;
     }
 
     /**
@@ -139,7 +96,7 @@ final class ArmyListAnalysis
      */
     public function wargearPoints(ArmyListEntry $entry): int
     {
-        return $entry->wargear->sum(fn (ArmyListEntryWargear $wargear): int => $wargear->quantity * (int) $this->wargearCosts->get($entry->unit_id.':'.$wargear->name)?->points);
+        return $entry->wargear->sum(fn (ArmyListEntryWargear $wargear): int => $wargear->quantity * (int) $this->referenceData->wargearCost($this->pointSet, $entry->unit_id, $wargear->name)?->points);
     }
 
     public function entryPoints(ArmyListEntry $entry): int
@@ -170,7 +127,9 @@ final class ArmyListAnalysis
      */
     public function detachmentPointsLimit(): ?int
     {
-        $parameters = $this->armyList->gameFormat->compositionRules()->where('rule_type', 'max_detachment_points')->value('parameters');
+        $parameters = $this->referenceData->rulesFor($this->armyList)
+            ->first(fn (CompositionRule $rule): bool => $rule->scope_type === 'game_format' && $rule->rule_type === 'max_detachment_points')
+            ?->parameters;
 
         return isset($parameters['max']) ? (int) $parameters['max'] : null;
     }
@@ -201,7 +160,7 @@ final class ArmyListAnalysis
             ];
         }
 
-        foreach ($this->applicableRules() as $rule) {
+        foreach ($this->referenceData->rulesFor($this->armyList) as $rule) {
             $details = $this->check($rule);
 
             if ($details !== null) {
@@ -265,27 +224,6 @@ final class ArmyListAnalysis
     public function missingModels(): int
     {
         return $this->armyList->entries->sum(fn (ArmyListEntry $entry): int => $this->playability($entry)['missing']);
-    }
-
-    /**
-     * Rules scoped to the list's game format, faction (and parent faction) or selected detachments.
-     *
-     * @return Collection<int, CompositionRule>
-     */
-    private function applicableRules(): Collection
-    {
-        $armyList = $this->armyList;
-        $detachmentIds = $armyList->detachments->modelKeys();
-
-        return CompositionRule::query()
-            ->where(function (Builder $query) use ($armyList, $detachmentIds): void {
-                $query->where(fn (Builder $query) => $query->where('scope_type', 'game_format')->where('scope_id', $armyList->game_format_id))
-                    ->orWhere(fn (Builder $query) => $query->where('scope_type', 'faction')->whereIn('scope_id', $armyList->faction->lineageIds()))
-                    ->when($detachmentIds !== [], fn (Builder $query) => $query
-                        ->orWhere(fn (Builder $query) => $query->where('scope_type', 'detachment')->whereIn('scope_id', $detachmentIds)));
-            })
-            ->orderBy('id')
-            ->get();
     }
 
     /**
@@ -420,7 +358,7 @@ final class ArmyListAnalysis
 
     private function isSupportUnit(int $unitId): bool
     {
-        return $this->attachments->contains(fn (string $kind, string $key): bool => $kind === UnitAttachment::SUPPORT && str_starts_with($key, $unitId.':'));
+        return $this->referenceData->isSupportUnit($unitId);
     }
 
     /**
@@ -442,7 +380,7 @@ final class ArmyListAnalysis
                     return "{$entry->unit->name} : unité de rattachement invalide";
                 }
 
-                return $this->attachments->has($entry->unit_id.':'.$bodyguard->unit_id)
+                return $this->referenceData->attachmentKind($entry->unit_id, $bodyguard->unit_id) !== null
                     ? null
                     : "{$entry->unit->name} ne peut pas rejoindre {$bodyguard->unit->name}";
             })
@@ -450,11 +388,11 @@ final class ArmyListAnalysis
 
         $crowded = $attached
             ->filter(fn (ArmyListEntry $entry): bool => $entriesById->has($entry->attached_to_entry_id))
-            ->groupBy(fn (ArmyListEntry $entry): string => $entry->attached_to_entry_id.':'.$this->attachments->get($entry->unit_id.':'.$entriesById[$entry->attached_to_entry_id]->unit_id))
+            ->groupBy(fn (ArmyListEntry $entry): string => $entry->attached_to_entry_id.':'.$this->referenceData->attachmentKind($entry->unit_id, $entriesById[$entry->attached_to_entry_id]->unit_id))
             ->filter(fn (Collection $group, string $key): bool => $group->count() > 1 && ! str_ends_with($key, ':'))
             ->map(function (Collection $group): string {
                 $bodyguard = $group->first()->attachedTo;
-                $kind = $this->attachments->get($group->first()->unit_id.':'.$bodyguard->unit_id) === UnitAttachment::SUPPORT ? 'Support' : 'Leader';
+                $kind = $this->referenceData->attachmentKind($group->first()->unit_id, $bodyguard->unit_id) === UnitAttachment::SUPPORT ? 'Support' : 'Leader';
 
                 return "{$bodyguard->unit->name} : plusieurs unités {$kind} (".$group->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)->join(', ').')';
             });

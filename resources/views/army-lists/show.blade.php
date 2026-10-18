@@ -3,6 +3,9 @@
 @section('title', $armyList->name)
 
 @section('content')
+    {{-- Options des formulaires d'unité, transmises une seule fois et partagées par tous les formulaires. --}}
+    <script type="application/json" id="army-list-entry-options">@json($entryOptions)</script>
+
     <p class="text-sm"><a href="{{ route('army-lists.index') }}" class="link">Listes d'armée</a></p>
 
     <div class="mb-6 flex flex-wrap items-start justify-between gap-4">

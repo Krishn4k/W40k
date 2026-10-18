@@ -15,7 +15,9 @@ use App\Models\PointSet;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\GameFormatSeeder;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ArmyListManagementTest extends TestCase
@@ -69,6 +71,32 @@ class ArmyListManagementTest extends TestCase
             ->assertSee('0')
             ->assertSee('/ 2000 pts')
             ->assertSee('Ajouter une unité');
+    }
+
+    public function test_the_index_query_count_does_not_grow_with_the_number_of_lists(): void
+    {
+        $this->createListsWithUnits(2);
+        $withTwoLists = $this->countQueries(fn () => $this->actingAs($this->user)->get(route('army-lists.index'))->assertOk());
+
+        $this->createListsWithUnits(4);
+        $withSixLists = $this->countQueries(fn () => $this->actingAs($this->user)->get(route('army-lists.index'))->assertOk()->assertSee('Liste 6'));
+
+        $this->assertSame($withTwoLists, $withSixLists);
+    }
+
+    public function test_the_list_form_query_count_does_not_grow_with_the_number_of_factions(): void
+    {
+        Detachment::factory()->for($this->faction)->create();
+        Detachment::factory()->for(Faction::factory()->subFactionOf($this->faction))->create();
+        $withTwoFactions = $this->countQueries(fn () => $this->actingAs($this->user)->get(route('army-lists.create'))->assertOk());
+
+        foreach (range(1, 4) as $index) {
+            $chapter = Faction::factory()->subFactionOf($this->faction)->create();
+            Detachment::factory()->for($chapter)->create();
+        }
+        $withSixFactions = $this->countQueries(fn () => $this->actingAs($this->user)->get(route('army-lists.create'))->assertOk());
+
+        $this->assertSame($withTwoFactions, $withSixFactions);
     }
 
     public function test_an_unknown_force_disposition_is_refused(): void
@@ -208,6 +236,38 @@ class ArmyListManagementTest extends TestCase
 
         $this->assertModelMissing($armyList);
         $this->assertSame(0, ArmyListEntry::count());
+    }
+
+    private function createListsWithUnits(int $count): void
+    {
+        $pointSet = PointSet::current();
+
+        foreach (range(1, $count) as $index) {
+            $armyList = ArmyList::factory()->for($this->user)->create([
+                'name' => 'Liste '.(ArmyList::query()->count() + 1),
+                'faction_id' => $this->faction->id,
+                'game_format_id' => $this->strikeForce->id,
+            ]);
+            $armyList->syncDetachments([Detachment::factory()->for($this->faction)->create()->id]);
+
+            foreach (range(1, 3) as $position) {
+                $unit = Unit::factory()->for($this->faction)->create();
+                $unit->pointCosts()->create(['point_set_id' => $pointSet->id, 'model_count' => 5, 'points' => 90]);
+                ArmyListEntry::factory()->for($armyList)->for($unit)->create(['model_count' => 5, 'position' => $position]);
+            }
+        }
+    }
+
+    private function countQueries(callable $request): int
+    {
+        $count = 0;
+        DB::listen(function () use (&$count): void {
+            $count++;
+        });
+        $request();
+        app('events')->forget(QueryExecuted::class);
+
+        return $count;
     }
 
     /**

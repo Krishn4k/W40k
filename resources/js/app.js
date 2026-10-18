@@ -168,8 +168,14 @@ Alpine.data('detachmentPicker', (config) => ({
     ...config,
     query: '',
 
+    /**
+     * Détachements de la faction choisie et de sa faction mère (un chapitre propose ceux des Space Marines).
+     */
     get detachments() {
-        return this.detachmentsByFaction[this.factionId] ?? [];
+        const parentId = this.parentFactionIds[this.factionId];
+
+        return [...(this.detachmentsByFaction[this.factionId] ?? []), ...(parentId ? this.detachmentsByFaction[parentId] ?? [] : [])]
+            .sort((first, second) => first.name.localeCompare(second.name));
     },
 
     /**
@@ -250,8 +256,24 @@ Alpine.data('gameDispositions', (config) => ({
     },
 }));
 
-Alpine.data('armyListEntryForm', (options, initial = {}) => ({
-    options,
+/**
+ * Contenu JSON d'un élément de la page (ex. <script type="application/json">), analysé une seule fois
+ * puis partagé par tous les composants qui le demandent.
+ */
+const pageData = (() => {
+    const cache = new Map();
+
+    return (elementId) => {
+        if (! cache.has(elementId)) {
+            cache.set(elementId, JSON.parse(document.getElementById(elementId)?.textContent ?? '{}'));
+        }
+
+        return cache.get(elementId);
+    };
+})();
+
+Alpine.data('armyListEntryForm', (optionsElementId, initial = {}) => ({
+    options: pageData(optionsElementId),
     unitId: initial.unitId ?? '',
     modelCount: initial.modelCount ?? '',
     enhancementId: initial.enhancementId ?? '',

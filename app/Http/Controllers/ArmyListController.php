@@ -32,11 +32,7 @@ class ArmyListController extends Controller
      */
     public function index(Request $request): View
     {
-        $analyses = $request->user()->armyLists()
-            ->with(['faction.parent', 'gameFormat', 'detachments'])
-            ->latest('updated_at')
-            ->get()
-            ->map(fn (ArmyList $armyList): ArmyListAnalysis => new ArmyListAnalysis($armyList));
+        $analyses = ArmyListAnalysis::forLists($request->user()->armyLists()->latest('updated_at')->get());
 
         return view('army-lists.index', ['analyses' => $analyses]);
     }
@@ -168,23 +164,25 @@ class ArmyListController extends Controller
         return [
             'armyList' => $armyList,
             'factionOptions' => $factions->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])->sort()->all(),
-            'detachmentsByFaction' => $factions->mapWithKeys(fn (Faction $faction): array => [
-                $faction->id => $faction->availableDetachments()->get()
-                    ->map(fn (Detachment $detachment): array => [
-                        'id' => $detachment->id,
-                        'name' => (string) $detachment->name,
-                        'points' => $detachment->detachment_points,
-                        'uniqueTag' => $detachment->unique_tag,
-                        'forceDispositions' => collect($detachment->force_dispositions ?? [])
-                            ->map(fn (string $name): ?string => ForceDisposition::fromMfm($name)?->value)
-                            ->filter()
-                            ->values()
-                            ->all(),
-                    ])
-                    ->sortBy('name')
-                    ->values()
-                    ->all(),
-            ])->all(),
+            // Each detachment is sent once, under its own faction; a sub-faction also offers its parent's (merged in the browser).
+            'detachmentsByFaction' => Detachment::query()->get()
+                ->map(fn (Detachment $detachment): array => [
+                    'id' => $detachment->id,
+                    'factionId' => $detachment->faction_id,
+                    'name' => (string) $detachment->name,
+                    'points' => $detachment->detachment_points,
+                    'uniqueTag' => $detachment->unique_tag,
+                    'forceDispositions' => collect($detachment->force_dispositions ?? [])
+                        ->map(fn (string $name): ?string => ForceDisposition::fromMfm($name)?->value)
+                        ->filter()
+                        ->values()
+                        ->all(),
+                ])
+                ->sortBy('name')
+                ->groupBy('factionId')
+                ->map(fn ($detachments) => $detachments->values()->all())
+                ->all(),
+            'parentFactionIds' => $factions->whereNotNull('parent_id')->pluck('parent_id', 'id')->all(),
             'forceDispositions' => collect(ForceDisposition::cases())
                 ->map(fn (ForceDisposition $disposition): array => ['value' => $disposition->value, 'label' => $disposition->label().' ('.$disposition->englishName().')'])
                 ->all(),

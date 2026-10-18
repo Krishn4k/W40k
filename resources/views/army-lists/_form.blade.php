@@ -13,6 +13,7 @@
          gameFormatId: @js((string) old('game_format_id', $armyList->game_format_id)),
          selectedIds: @js($selectedDetachmentIds),
          detachmentsByFaction: @js($detachmentsByFaction),
+         parentFactionIds: @js($parentFactionIds),
          pointLimits: @js($detachmentPointLimits),
          forceDispositions: @js($forceDispositions),
          forceDisposition: @js((string) old('force_disposition', $armyList->force_disposition?->value)),

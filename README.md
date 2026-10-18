@@ -325,6 +325,14 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Mots-clés : 147 courants traduits à la main, 866 déduits du nom traduit de l'unité ou de la faction correspondante (1 013 / 1 594)
 - [ ] Relecture des 3 580 traductions « à vérifier » ; 581 mots-clés rares encore en anglais
 
+### Audit et performances
+- [x] Premier audit (performance, maintenabilité) avec mesure des pages : taille et nombre de requêtes
+- [x] Page d'une liste : options des formulaires d'unité envoyées une seule fois (831 → 135 Ko pour 8 unités)
+- [x] Index des listes : données de référence chargées une fois pour toutes les listes (57 → 17 requêtes pour 5 listes, nombre constant)
+- [x] Formulaire de liste : détachements chargés en une requête, une seule fois par faction (49 → 10 requêtes, 119 → 78 Ko)
+- [ ] Pistes de maintenabilité : règles d'analyse en classes, scope commun pour la recherche JSON sur les noms,
+  options de factions unifiées, analyse statique (Larastan, nouvelle dépendance à valider)
+
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
 ## 6. Journal des décisions
@@ -393,6 +401,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Règles V11 non bloquantes (rapport d'analyse), seules les contraintes dures (disponibilité, rattachement dans la liste, équipement connu) sont validées | Même principe que les règles existantes : un brouillon peut être non conforme. |
 | 2026-10-18 | Dispositions de force et missions primaires en code (enum `ForceDisposition` + table des 15 paires) plutôt qu'en base | 5 valeurs et 15 paires fixées par le deck de missions ; elles ne changent qu'avec un nouveau Chapter Approved. |
 | 2026-10-18 | Mission déduite écrite dans le champ texte Mission (« Immovable Object (Objet inébranlable) ») sans écraser une saisie libre | Les parties existantes et les missions hors tournoi restent saisissables ; pas de nouvelle colonne. |
+| 2026-10-18 | `ArmyListReferenceData` : coûts, rattachements et règles chargés par lot pour toutes les listes analysées | Le nombre de requêtes de l'index ne dépend plus du nombre de listes ; un seul chemin de code pour une liste ou plusieurs. |
+| 2026-10-18 | Options des formulaires d'unité dans un bloc JSON unique de la page (`<script type="application/json">`), lu une fois par Alpine | Évite de recopier toutes les unités de la faction dans chaque formulaire de modification. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
