@@ -12,10 +12,10 @@
     </div>
 
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <form method="GET" action="{{ route('collection.index') }}" class="flex items-end gap-2">
+        <form method="GET" action="{{ route('collection.index') }}" x-data="autoSubmitFilters" class="flex items-end gap-2">
             <div>
                 <label for="faction" class="form-label">Faction</label>
-                <select id="faction" name="faction" class="form-input" onchange="this.form.submit()">
+                <select id="faction" name="faction" class="form-input">
                     <option value="">Toutes</option>
                     @foreach ($factionOptions as $id => $label)
                         <option value="{{ $id }}" @selected($selectedFactionId === $id)>{{ $label }}</option>

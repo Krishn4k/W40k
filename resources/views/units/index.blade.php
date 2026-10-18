@@ -13,7 +13,7 @@
         @endcan
     </div>
 
-    <form method="GET" action="{{ route('units.index') }}" class="mb-6 flex flex-wrap items-end gap-4">
+    <form method="GET" action="{{ route('units.index') }}" x-data="autoSubmitFilters" class="mb-6 flex flex-wrap items-end gap-4">
         <div>
             <label for="faction" class="form-label">Faction</label>
             <select id="faction" name="faction" class="form-input">
@@ -33,7 +33,7 @@
             </select>
         </div>
         @include('units._filters')
-        <button type="submit" class="btn-secondary">Filtrer</button>
+        <noscript><button type="submit" class="btn-secondary">Filtrer</button></noscript>
     </form>
 
     @if ($units->isEmpty())

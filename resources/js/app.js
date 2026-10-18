@@ -13,6 +13,46 @@ const isVisible = (option, query, showLegends, selected) => String(option.value)
     || ((showLegends || ! option.legends) && (query === '' || normalize(option.search).includes(normalize(query))));
 
 /**
+ * Formulaire de filtres (GET) envoyé automatiquement : après une pause dans la saisie d'un champ texte,
+ * ou dès qu'une liste déroulante ou une case change. Le champ en cours de saisie retrouve le focus
+ * après le rechargement de la page.
+ */
+Alpine.data('autoSubmitFilters', (delay = 400) => ({
+    timer: null,
+
+    init() {
+        const refocusId = sessionStorage.getItem('autoSubmitFilters.refocus');
+        sessionStorage.removeItem('autoSubmitFilters.refocus');
+        const field = refocusId ? this.$el.querySelector(`#${CSS.escape(refocusId)}`) : null;
+        if (field) {
+            field.focus();
+            field.setSelectionRange(field.value.length, field.value.length);
+        }
+
+        this.$el.addEventListener('input', (event) => {
+            if (! event.target.matches('input[type=search], input[type=text]')) {
+                return;
+            }
+            clearTimeout(this.timer);
+            this.timer = setTimeout(() => this.submit(event.target), delay);
+        });
+
+        this.$el.addEventListener('change', (event) => {
+            if (event.target.matches('select, input[type=checkbox]')) {
+                this.submit();
+            }
+        });
+    },
+
+    submit(focusedField = null) {
+        if (focusedField?.id) {
+            sessionStorage.setItem('autoSubmitFilters.refocus', focusedField.id);
+        }
+        this.$el.requestSubmit();
+    },
+}));
+
+/**
  * Liste déroulante d'unités filtrable, regroupée par faction.
  */
 Alpine.data('filterableSelect', (options, selected = '') => ({

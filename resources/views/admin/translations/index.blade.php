@@ -25,7 +25,7 @@
         @endforeach
     </div>
 
-    <form method="GET" action="{{ route('admin.translations.index') }}" class="mb-6 flex flex-wrap items-end gap-4">
+    <form method="GET" action="{{ route('admin.translations.index') }}" x-data="autoSubmitFilters" class="mb-6 flex flex-wrap items-end gap-4">
         <input type="hidden" name="type" value="{{ $type }}">
         <div>
             <label for="status" class="form-label">Afficher</label>
@@ -50,7 +50,7 @@
             <label for="q" class="form-label">Nom anglais contient</label>
             <input id="q" name="q" type="search" value="{{ $search }}" class="form-input">
         </div>
-        <button type="submit" class="btn-secondary">Filtrer</button>
+        <noscript><button type="submit" class="btn-secondary">Filtrer</button></noscript>
     </form>
 
     @if ($records->isEmpty())
