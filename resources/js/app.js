@@ -87,6 +87,46 @@ Alpine.data('autoSubmitFilters', (delay = 300) => ({
 }));
 
 /**
+ * Ligne de la liste de traductions : le nom français est enregistré et validé sans recharger la page,
+ * et le badge de statut se met à jour avec la réponse du serveur.
+ */
+Alpine.data('translationRow', (initial) => ({
+    status: initial.status,
+    statusLabel: initial.statusLabel,
+    fr: initial.fr,
+    saving: false,
+    error: '',
+
+    async save(form) {
+        this.saving = true;
+        this.error = '';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                this.error = data.message ?? 'Enregistrement impossible.';
+
+                return;
+            }
+
+            this.status = data.status;
+            this.statusLabel = data.statusLabel;
+            this.fr = data.fr;
+        } catch {
+            this.error = 'Erreur réseau : réessaie.';
+        } finally {
+            this.saving = false;
+        }
+    },
+}));
+
+/**
  * Liste déroulante d'unités filtrable, regroupée par faction.
  */
 Alpine.data('filterableSelect', (options, selected = '') => ({

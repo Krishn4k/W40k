@@ -44,6 +44,13 @@
                     @endforeach
                     @can('admin')
                         <li>
+                            <a href="{{ route('translations.overview') }}"
+                               @class([
+                                   'block py-1 hover:text-amber-700 dark:hover:text-amber-400',
+                                   'font-semibold text-amber-700 dark:text-amber-400' => request()->routeIs('translations.*'),
+                               ])>Traductions</a>
+                        </li>
+                        <li>
                             <a href="{{ route('admin.users.index') }}"
                                @class([
                                    'block py-1 hover:text-amber-700 dark:hover:text-amber-400',

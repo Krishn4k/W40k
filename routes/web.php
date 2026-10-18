@@ -43,8 +43,6 @@ Route::middleware('auth')->group(function () {
         Route::post('utilisateurs/{user}/reinitialisation', [UserController::class, 'resetLink'])->name('users.reset-link');
         Route::post('invitations', [InvitationController::class, 'store'])->name('invitations.store');
         Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy'])->name('invitations.destroy');
-        Route::get('traductions', [TranslationController::class, 'index'])->name('translations.index');
-        Route::put('traductions/{type}/{id}', [TranslationController::class, 'update'])->whereNumber('id')->name('translations.update');
     });
 
     Route::resource('collection', CollectionLotController::class)
@@ -65,6 +63,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [ArmyListEntryController::class, 'store'])->name('store');
         Route::put('{entry}', [ArmyListEntryController::class, 'update'])->name('update');
         Route::delete('{entry}', [ArmyListEntryController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('traductions')->name('translations.')->middleware('can:admin')->group(function () {
+        Route::get('/', [TranslationController::class, 'overview'])->name('overview');
+        Route::get('liste', [TranslationController::class, 'index'])->name('index');
+        Route::put('{type}/{id}', [TranslationController::class, 'update'])->whereNumber('id')->name('update');
+        Route::post('{type}/valider', [TranslationController::class, 'validateSelection'])->name('validate');
     });
 
     Route::resource('parties', GameController::class)

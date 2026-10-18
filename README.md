@@ -183,7 +183,9 @@ Les noms français sont dans les colonnes JSON `name` (`fr`). Le fichier version
 
 - `php artisan reference:export-translations [chemin] [--missing]` : export (tout, ou seulement les noms non traduits) ;
 - `php artisan reference:import-translations [chemin]` : import (une case `fr` vide ne modifie rien) ;
-- écran Administration → Traductions : avancement par type, filtres, saisie et validation au cas par cas.
+- menu **Traductions** (administrateurs) : *Vue d'ensemble* (reste à traduire / à vérifier par type et par faction,
+  chaque compteur ouvre la liste filtrée) et *Liste de travail* (statut À traduire / À vérifier / Validé, validation
+  ligne par ligne sans rechargement, « Valider la sélection » en masse, lien vers la fiche).
 
 Un nom identique déjà en base et marqué « à vérifier » dans le fichier ne change pas de statut : les validations
 faites dans l'appli survivent aux réimports. Pour les reporter dans le fichier versionné, relancer
@@ -277,7 +279,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Export / import CSV des noms (`reference:export-translations`, `reference:import-translations`), appliqué après chaque import BSData
 - [x] Pré-remplissage à vérifier : 40 factions, 147 mots-clés courants, unités, détachements et optimisations Space Marines et Blood Angels
 - [x] Pré-remplissage à vérifier : tous les autres chapitres Space Marines (Black Templars, Dark Angels, Deathwatch, Space Wolves, Ultramarines, White Scars, Imperial Fists, Iron Hands, Raven Guard, Salamanders)
-- [x] Écran d'administration des traductions (avancement, filtres, statut « à vérifier »)
+- [x] Menu Traductions : vue d'ensemble par faction et par type, liste de travail avec statuts, validation unitaire et en masse
 - [x] Pré-remplissage à vérifier : Necrons, Orks, Tyranides (unités, détachements, optimisations)
 - [x] Pré-remplissage à vérifier : Chaos Space Marines, Astra Militarum, Aeldari (dont Ynnari et Corsaires), Empire T'au
 - [x] Pré-remplissage à vérifier de toutes les autres factions : 100 % des factions, unités, détachements et optimisations
@@ -344,6 +346,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Statut « à vérifier » dans une table polymorphe `translation_reviews` | Aucune modification des tables existantes ; ne stocke que les exceptions. |
 | 2026-10-18 | Unités [Legends] masquées par défaut (case « Légendes » pour les afficher) ; une unité déjà choisie reste visible | 390 unités sur 1 495 sont hors format compétitif ; elles encombraient les listes. Repérées par « [Legends] » dans le nom anglais, sans colonne dédiée. |
 | 2026-10-18 | Listes déroulantes d'unités filtrées côté navigateur (Alpine), recherche sans accents sur les noms FR et EN | Réponse immédiate sans rechargement ; ~1 500 unités restent légères à transmettre. |
+| 2026-10-18 | Traductions sorties de l'administration vers un menu dédié (vue d'ensemble + liste de travail), validation en masse par cases à cocher | Relire 3 500 noms faction par faction demande de voir le reste à faire et de valider vite ; la sélection reste explicite. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
