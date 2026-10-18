@@ -25,7 +25,7 @@
         @endforeach
     </div>
 
-    <form method="GET" action="{{ route('admin.translations.index') }}" x-data="autoSubmitFilters" class="mb-6 flex flex-wrap items-end gap-4">
+    <form method="GET" action="{{ route('admin.translations.index') }}" x-data="autoSubmitFilters" data-results="#translation-results" class="mb-6 flex flex-wrap items-end gap-4">
         <input type="hidden" name="type" value="{{ $type }}">
         <div>
             <label for="status" class="form-label">Afficher</label>
@@ -53,6 +53,7 @@
         <noscript><button type="submit" class="btn-secondary">Filtrer</button></noscript>
     </form>
 
+    <div id="translation-results" class="aria-busy:opacity-60">
     @if ($records->isEmpty())
         <p class="card text-zinc-600 dark:text-zinc-400">Rien à afficher avec ces filtres.</p>
     @else
@@ -83,4 +84,5 @@
         </ul>
         <div class="mt-4">{{ $records->links() }}</div>
     @endif
+    </div>
 @endsection

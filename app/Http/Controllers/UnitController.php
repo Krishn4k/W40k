@@ -24,13 +24,15 @@ class UnitController extends Controller
         $factionId = $request->integer('faction') ?: null;
         $search = trim((string) $request->query('q'));
         $withLegends = $request->boolean('legendes');
+        [$sort, $direction] = Unit::listingSort($request);
+        $pointSet = PointSet::current();
 
         $units = Unit::query()
             ->when($factionId, fn ($query) => $query->where('faction_id', $factionId))
             ->when($role, fn ($query) => $query->where('role', $role))
             ->listingFilters($search, $withLegends)
-            ->withListingData(PointSet::current())
-            ->orderByName()
+            ->withListingData($pointSet)
+            ->sortedBy($sort, $direction, $pointSet)
             ->paginate(50)
             ->withQueryString();
 
@@ -40,6 +42,8 @@ class UnitController extends Controller
             'selectedFactionId' => $factionId,
             'selectedRole' => $role,
             'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
             'withLegends' => $withLegends,
         ]);
     }

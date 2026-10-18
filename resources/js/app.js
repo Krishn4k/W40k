@@ -6,49 +6,83 @@ import Alpine from 'alpinejs';
 const normalize = (text) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
- * Une option est visible si elle correspond à la recherche et n'est pas une Légende masquée ;
- * l'option déjà choisie reste toujours visible pour ne pas perdre la sélection.
+ * Une option est visible si chaque mot recherché figure dans son texte de recherche (noms, mots-clés,
+ * rôle, faction) et si ce n'est pas une Légende masquée ; l'option déjà choisie reste toujours visible.
  */
-const isVisible = (option, query, showLegends, selected) => String(option.value) === String(selected)
-    || ((showLegends || ! option.legends) && (query === '' || normalize(option.search).includes(normalize(query))));
+const isVisible = (option, query, showLegends, selected) => {
+    if (String(option.value) === String(selected)) {
+        return true;
+    }
+    if (! showLegends && option.legends) {
+        return false;
+    }
+    const text = normalize(option.search);
+
+    return normalize(query).split(/\s+/).filter(Boolean).every((word) => text.includes(word));
+};
 
 /**
- * Formulaire de filtres (GET) envoyé automatiquement : après une pause dans la saisie d'un champ texte,
- * ou dès qu'une liste déroulante ou une case change. Le champ en cours de saisie retrouve le focus
- * après le rechargement de la page.
+ * Formulaire de filtres (GET) appliqué automatiquement, sans recharger la page : après une pause dans
+ * la saisie, ou dès qu'une liste déroulante ou une case change, la page filtrée est récupérée en arrière-plan
+ * et seule la zone de résultats (sélecteur dans l'attribut data-results du formulaire) est remplacée.
+ * Le champ de saisie garde ainsi le focus et tout ce qui est tapé pendant la requête.
  */
-Alpine.data('autoSubmitFilters', (delay = 400) => ({
+Alpine.data('autoSubmitFilters', (delay = 300) => ({
     timer: null,
+    controller: null,
 
     init() {
-        const refocusId = sessionStorage.getItem('autoSubmitFilters.refocus');
-        sessionStorage.removeItem('autoSubmitFilters.refocus');
-        const field = refocusId ? this.$el.querySelector(`#${CSS.escape(refocusId)}`) : null;
-        if (field) {
-            field.focus();
-            field.setSelectionRange(field.value.length, field.value.length);
-        }
-
         this.$el.addEventListener('input', (event) => {
-            if (! event.target.matches('input[type=search], input[type=text]')) {
-                return;
+            if (event.target.matches('input[type=search], input[type=text]')) {
+                clearTimeout(this.timer);
+                this.timer = setTimeout(() => this.refresh(), delay);
             }
-            clearTimeout(this.timer);
-            this.timer = setTimeout(() => this.submit(event.target), delay);
         });
 
         this.$el.addEventListener('change', (event) => {
             if (event.target.matches('select, input[type=checkbox]')) {
-                this.submit();
+                this.refresh();
             }
+        });
+
+        this.$el.addEventListener('submit', (event) => {
+            event.preventDefault();
+            this.refresh();
         });
     },
 
-    submit(focusedField = null) {
-        if (focusedField?.id) {
-            sessionStorage.setItem('autoSubmitFilters.refocus', focusedField.id);
+    async refresh() {
+        const selector = this.$el.dataset.results;
+        const target = selector ? document.querySelector(selector) : null;
+        const url = new URL(this.$el.action);
+        url.search = new URLSearchParams(new FormData(this.$el)).toString();
+
+        if (! target) {
+            window.location.assign(url);
+
+            return;
         }
-        this.$el.requestSubmit();
+
+        // Une nouvelle frappe annule la requête précédente : seule la dernière recherche s'affiche.
+        this.controller?.abort();
+        this.controller = new AbortController();
+        target.setAttribute('aria-busy', 'true');
+
+        try {
+            const response = await fetch(url, { signal: this.controller.signal, headers: { Accept: 'text/html' } });
+            const fresh = new DOMParser().parseFromString(await response.text(), 'text/html').querySelector(selector);
+
+            if (fresh) {
+                target.innerHTML = fresh.innerHTML;
+                history.replaceState(null, '', url);
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                window.location.assign(url);
+            }
+        } finally {
+            target.removeAttribute('aria-busy');
+        }
     },
 }));
 

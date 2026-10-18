@@ -126,6 +126,6 @@ class CollectionLotController extends Controller
      */
     private function unitOptions(): array
     {
-        return UnitSelectOptions::from(Unit::query()->with('faction.parent')->get());
+        return UnitSelectOptions::from(Unit::query()->with(['faction.parent', 'keywords'])->get());
     }
 }

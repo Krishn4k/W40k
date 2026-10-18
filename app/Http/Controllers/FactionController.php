@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FactionRequest;
 use App\Models\Faction;
 use App\Models\PointSet;
+use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -49,17 +50,21 @@ class FactionController extends Controller
         $faction->load(['parent', 'subFactions', 'detachments.enhancements']);
         $search = trim((string) $request->query('q'));
         $withLegends = $request->boolean('legendes');
+        [$sort, $direction] = Unit::listingSort($request);
+        $pointSet = PointSet::current();
 
         $units = $faction->availableUnits()
             ->listingFilters($search, $withLegends)
-            ->withListingData(PointSet::current())
-            ->orderByName()
+            ->withListingData($pointSet)
+            ->sortedBy($sort, $direction, $pointSet)
             ->get();
 
         return view('factions.show', [
             'faction' => $faction,
             'units' => $units,
             'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
             'withLegends' => $withLegends,
         ]);
     }

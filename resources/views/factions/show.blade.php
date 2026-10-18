@@ -41,16 +41,19 @@
     @endif
 
     <section id="unites" class="mb-8 scroll-mt-4">
-        <h2 class="mb-3 text-lg font-semibold">Unités disponibles ({{ $units->count() }})</h2>
-        <form method="GET" action="{{ route('factions.show', $faction) }}#unites" x-data="autoSubmitFilters" class="mb-4 flex flex-wrap items-end gap-4">
+        <h2 class="mb-3 text-lg font-semibold">Unités disponibles</h2>
+        <form method="GET" action="{{ route('factions.show', $faction) }}" x-data="autoSubmitFilters" data-results="#faction-unit-results" class="mb-4 flex flex-wrap items-end gap-4">
             @include('units._filters')
             <noscript><button type="submit" class="btn-secondary">Filtrer</button></noscript>
         </form>
-        @if ($units->isEmpty())
-            <p class="card text-zinc-600 dark:text-zinc-400">Aucune unité ne correspond.</p>
-        @else
-            @include('units._table', ['units' => $units, 'currentFaction' => $faction])
-        @endif
+        <div id="faction-unit-results" class="aria-busy:opacity-60">
+            <p class="mb-2 text-sm text-zinc-600 dark:text-zinc-400">{{ $units->count() }} unité(s)</p>
+            @if ($units->isEmpty())
+                <p class="card text-zinc-600 dark:text-zinc-400">Aucune unité ne correspond.</p>
+            @else
+                @include('units._table', ['units' => $units, 'currentFaction' => $faction])
+            @endif
+        </div>
     </section>
 
     <section>

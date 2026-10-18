@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 #[Fillable(['bsdata_id', 'faction_id', 'name', 'role', 'is_epic_hero'])]
 class Unit extends Model
@@ -130,29 +132,40 @@ class Unit extends Model
     }
 
     /**
-     * Units whose English or French name contains the given text, case-insensitively.
+     * Free-text search: every word must match the unit's name, one of its keywords, its faction
+     * (French or English, ignoring case and accents) or its role.
      *
      * @param  Builder<Unit>  $query
      */
     #[Scope]
-    protected function nameContains(Builder $query, string $text): void
+    protected function matchingSearch(Builder $query, string $search): void
     {
-        $pattern = '%'.mb_strtolower($text).'%';
+        $translatedNameLike = fn (Builder $query, string $pattern): Builder => $query->where(fn (Builder $query) => $query
+            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.en')) COLLATE utf8mb4_unicode_ci LIKE ?", [$pattern])
+            ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.fr')) COLLATE utf8mb4_unicode_ci LIKE ?", [$pattern]));
 
-        $query->where(fn (Builder $query) => $query
-            ->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.en'))) LIKE ?", [$pattern])
-            ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.fr'))) LIKE ?", [$pattern]));
+        foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            $pattern = '%'.addcslashes($word, '\\%_').'%';
+            $roles = collect(UnitRole::cases())
+                ->filter(fn (UnitRole $role): bool => str_contains(Str::lower(Str::ascii($role->label().' '.$role->value)), Str::lower(Str::ascii($word))))
+                ->values();
+
+            $query->where(fn (Builder $query) => $translatedNameLike($query, $pattern)
+                ->orWhereHas('keywords', fn (Builder $query) => $translatedNameLike($query, $pattern))
+                ->orWhereHas('faction', fn (Builder $query) => $translatedNameLike($query, $pattern))
+                ->when($roles->isNotEmpty(), fn (Builder $query) => $query->orWhereIn('role', $roles)));
+        }
     }
 
     /**
-     * Filters shared by unit listings: name search, Legends hidden unless asked for.
+     * Filters shared by unit listings: free-text search, Legends hidden unless asked for.
      *
      * @param  Builder<Unit>  $query
      */
     #[Scope]
     protected function listingFilters(Builder $query, string $search, bool $withLegends): void
     {
-        $query->when($search !== '', fn (Builder $query) => $query->nameContains($search))
+        $query->when(trim($search) !== '', fn (Builder $query) => $query->matchingSearch($search))
             ->unless($withLegends, fn (Builder $query) => $query->withoutLegends());
     }
 
@@ -165,5 +178,45 @@ class Unit extends Model
     protected function orderByName(Builder $query): void
     {
         $query->orderBy('name->en');
+    }
+
+    /**
+     * Sort column and direction requested by a listing ("?tri=points&ordre=desc"), name ascending by default.
+     *
+     * @return array{0: 'name'|'role'|'points', 1: 'asc'|'desc'}
+     */
+    public static function listingSort(Request $request): array
+    {
+        $column = ['nom' => 'name', 'role' => 'role', 'points' => 'points'][$request->query('tri')] ?? 'name';
+
+        return [$column, $request->query('ordre') === 'desc' ? 'desc' : 'asc'];
+    }
+
+    /**
+     * Sort a unit listing by displayed name, role (in game order) or lowest points cost in the point set.
+     *
+     * @param  Builder<Unit>  $query
+     * @param  'name'|'role'|'points'  $column
+     * @param  'asc'|'desc'  $direction
+     */
+    #[Scope]
+    protected function sortedBy(Builder $query, string $column, string $direction, ?PointSet $pointSet): void
+    {
+        $direction = $direction === 'desc' ? 'desc' : 'asc';
+        $locale = preg_replace('/[^a-z]/', '', app()->getLocale()) ?: 'en';
+        $displayedName = "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(name, '$.{$locale}')), JSON_UNQUOTE(JSON_EXTRACT(name, '$.en'))) COLLATE utf8mb4_unicode_ci";
+
+        match ($column) {
+            'role' => $query->orderByRaw(
+                'FIELD(role, '.collect(UnitRole::cases())->map(fn (UnitRole $role): string => "'{$role->value}'")->join(', ').") {$direction}",
+            ),
+            'points' => $query->orderBy(
+                UnitPointCost::query()->selectRaw('MIN(points)')->whereColumn('unit_id', 'units.id')->where('point_set_id', $pointSet?->id),
+                $direction,
+            ),
+            default => null,
+        };
+
+        $query->orderByRaw("{$displayedName} ".($column === 'name' ? $direction : 'asc'));
     }
 }

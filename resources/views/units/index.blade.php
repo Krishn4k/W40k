@@ -13,7 +13,7 @@
         @endcan
     </div>
 
-    <form method="GET" action="{{ route('units.index') }}" x-data="autoSubmitFilters" class="mb-6 flex flex-wrap items-end gap-4">
+    <form method="GET" action="{{ route('units.index') }}" x-data="autoSubmitFilters" data-results="#unit-results" class="mb-6 flex flex-wrap items-end gap-4">
         <div>
             <label for="faction" class="form-label">Faction</label>
             <select id="faction" name="faction" class="form-input">
@@ -36,10 +36,13 @@
         <noscript><button type="submit" class="btn-secondary">Filtrer</button></noscript>
     </form>
 
-    @if ($units->isEmpty())
-        <p class="card text-zinc-600 dark:text-zinc-400">Aucune unité ne correspond.</p>
-    @else
-        @include('units._table', ['units' => $units])
-        <div class="mt-4">{{ $units->links() }}</div>
-    @endif
+    <div id="unit-results" class="aria-busy:opacity-60">
+        <p class="mb-2 text-sm text-zinc-600 dark:text-zinc-400">{{ $units->total() }} unité(s)</p>
+        @if ($units->isEmpty())
+            <p class="card text-zinc-600 dark:text-zinc-400">Aucune unité ne correspond.</p>
+        @else
+            @include('units._table', ['units' => $units])
+            <div class="mt-4">{{ $units->links() }}</div>
+        @endif
+    </div>
 @endsection

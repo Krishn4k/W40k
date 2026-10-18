@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UnitRole;
 use App\Models\Faction;
+use App\Models\Keyword;
+use App\Models\PointSet;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,6 +56,46 @@ class UnitFiltersTest extends TestCase
             ->assertDontSee('Prêtre Sanguinien');
     }
 
+    public function test_the_search_covers_keywords_role_and_faction_and_combines_words(): void
+    {
+        $bloodAngels = Faction::factory()->create(['name' => ['en' => 'Blood Angels']]);
+        $jumpPack = Keyword::factory()->create(['name' => ['en' => 'Jump Pack', 'fr' => 'Réacteur dorsal']]);
+        $guard = Unit::factory()->for($bloodAngels)->create(['name' => ['en' => 'Sanguinary Guard'], 'role' => UnitRole::Other]);
+        $guard->keywords()->attach($jumpPack);
+        Unit::factory()->for($bloodAngels)->create(['name' => ['en' => 'Commander Dante'], 'role' => UnitRole::Character]);
+
+        $this->actingAs($this->user)->get(route('units.index', ['q' => 'reacteur']))
+            ->assertSee('Sanguinary Guard')
+            ->assertDontSee('Commander Dante');
+
+        $this->actingAs($this->user)->get(route('units.index', ['q' => 'blood personnage']))
+            ->assertSee('Commander Dante')
+            ->assertDontSee('Sanguinary Guard')
+            ->assertDontSee('Prêtre Sanguinien');
+    }
+
+    public function test_unit_tables_can_be_sorted_by_name_role_and_points(): void
+    {
+        $pointSet = PointSet::factory()->create();
+        $cheap = Unit::factory()->for($this->faction)->create(['name' => ['en' => 'Zeta Scouts'], 'role' => UnitRole::Battleline]);
+        $expensive = Unit::factory()->for($this->faction)->create(['name' => ['en' => 'Alpha Tank'], 'role' => UnitRole::Other]);
+        $cheap->pointCosts()->create(['point_set_id' => $pointSet->id, 'model_count' => 5, 'points' => 60]);
+        $expensive->pointCosts()->create(['point_set_id' => $pointSet->id, 'model_count' => 1, 'points' => 300]);
+
+        $this->actingAs($this->user)->get(route('units.index', ['tri' => 'points', 'ordre' => 'desc']))
+            ->assertSeeInOrder(['Alpha Tank', 'Zeta Scouts']);
+
+        $this->actingAs($this->user)->get(route('units.index', ['tri' => 'points', 'ordre' => 'asc']))
+            ->assertSeeInOrder(['Zeta Scouts', 'Alpha Tank']);
+
+        $this->actingAs($this->user)->get(route('units.index', ['tri' => 'nom', 'ordre' => 'desc']))
+            ->assertSeeInOrder(['Zeta Scouts', 'Prêtre Sanguinien', 'Alpha Tank']);
+
+        $this->actingAs($this->user)->get(route('factions.show', [$this->faction, 'tri' => 'role']))
+            ->assertOk()
+            ->assertSeeInOrder(['Zeta Scouts', 'Alpha Tank']);
+    }
+
     public function test_the_faction_page_filters_its_units_the_same_way(): void
     {
         $this->actingAs($this->user)->get(route('factions.show', $this->faction))
@@ -74,6 +117,6 @@ class UnitFiltersTest extends TestCase
             ->assertOk()
             ->assertSee('filterableSelect', false)
             ->assertSee("{$quote}legends{$quote}:true", false)
-            ->assertSee('prêtre sanguinien sanguinary priest', false);
+            ->assertSee('sanguinary priest prêtre sanguinien', false);
     }
 }

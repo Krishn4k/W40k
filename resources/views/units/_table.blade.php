@@ -3,9 +3,15 @@
     <table class="w-full text-left text-sm">
         <thead class="border-b border-zinc-200 text-xs text-zinc-500 uppercase dark:border-zinc-800">
             <tr>
-                <th class="px-4 py-3">Unité</th>
-                <th class="px-4 py-3">Rôle</th>
-                <th class="px-4 py-3">Points</th>
+                <th class="px-4 py-3" @if (($sort ?? 'name') === 'name') aria-sort="{{ ($direction ?? 'asc') === 'asc' ? 'ascending' : 'descending' }}" @endif>
+                    @include('units._sort-link', ['label' => 'Unité', 'param' => 'nom', 'column' => 'name'])
+                </th>
+                <th class="px-4 py-3" @if (($sort ?? '') === 'role') aria-sort="{{ $direction === 'asc' ? 'ascending' : 'descending' }}" @endif>
+                    @include('units._sort-link', ['label' => 'Rôle', 'param' => 'role', 'column' => 'role'])
+                </th>
+                <th class="px-4 py-3" @if (($sort ?? '') === 'points') aria-sort="{{ $direction === 'asc' ? 'ascending' : 'descending' }}" @endif>
+                    @include('units._sort-link', ['label' => 'Points', 'param' => 'points', 'column' => 'points'])
+                </th>
                 <th class="hidden px-4 py-3 md:table-cell">Mots-clés</th>
                 <th class="px-4 py-3"><span class="sr-only">Actions</span></th>
             </tr>

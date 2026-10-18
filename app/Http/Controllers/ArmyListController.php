@@ -14,6 +14,7 @@ use App\Models\PointSet;
 use App\Models\Unit;
 use App\Support\ArmyListAnalysis;
 use App\Support\ArmyListTextExport;
+use App\Support\UnitSelectOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -169,7 +170,7 @@ class ArmyListController extends Controller
     private function entryOptions(ArmyList $armyList, ?PointSet $pointSet): array
     {
         $units = $armyList->faction->availableUnits()
-            ->with(['faction.parent', 'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')])
+            ->with(['faction.parent', 'keywords', 'pointCosts' => fn ($query) => $query->where('point_set_id', $pointSet?->id)->orderBy('model_count')])
             ->orderByName()
             ->get();
 
@@ -187,7 +188,7 @@ class ArmyListController extends Controller
                 'name' => (string) $unit->name,
                 'group' => $unit->faction->fullName(),
                 'legends' => $unit->isLegends(),
-                'search' => mb_strtolower((string) $unit->name.' '.$unit->name->get('en')),
+                'search' => UnitSelectOptions::searchText($unit),
                 'canTakeEnhancement' => $unit->role === UnitRole::Character && ! $unit->is_epic_hero,
                 'squadSizes' => $unit->pointCosts->map(fn ($cost): array => ['modelCount' => $cost->model_count, 'points' => $cost->points])->values()->all(),
                 'lots' => $lotsByPlayedUnit->get($unit->id, collect())->map(fn (CollectionLot $lot): array => [

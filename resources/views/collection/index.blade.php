@@ -12,7 +12,7 @@
     </div>
 
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <form method="GET" action="{{ route('collection.index') }}" x-data="autoSubmitFilters" class="flex items-end gap-2">
+        <form method="GET" action="{{ route('collection.index') }}" x-data="autoSubmitFilters" data-results="#collection-results" class="flex items-end gap-2">
             <div>
                 <label for="faction" class="form-label">Faction</label>
                 <select id="faction" name="faction" class="form-input">
@@ -27,6 +27,7 @@
         @include('partials.paint-legend')
     </div>
 
+    <div id="collection-results" class="aria-busy:opacity-60">
     @forelse ($lotsByFaction as $factionName => $lots)
         <section class="mb-8">
             <h2 class="mb-3 text-lg font-semibold">{{ $factionName }} <span class="text-sm font-normal text-zinc-500">({{ $lots->sum('quantity') }} fig.)</span></h2>
@@ -74,4 +75,5 @@
             Aucune figurine pour l'instant. <a href="{{ route('collection.create') }}" class="link">Ajouter un premier lot</a>.
         </p>
     @endforelse
+    </div>
 @endsection
