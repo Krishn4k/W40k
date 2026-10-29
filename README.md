@@ -337,7 +337,9 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Paquet de déploiement `deploy/build.ps1` : `w40k-app/` (code, dépendances de production, hors du web) et
   `krishnak/` (page d'accueil « Projets », `.htaccess`, partie publique `w40k/`), testé en local sous `/w40k`
 - [x] Tables préfixées `w40k_` dans la base partagée avec WordPress (`DB_PREFIX`), suite de tests validée avec le préfixe
-- [ ] Page « Maintenance » (admin) : migrations en attente, optimisation, caches (pas de SSH sur l'offre Perso)
+- [x] Page « Maintenance » (admin) : version en ligne, migrations en attente et application, optimisation, vidage des caches ;
+  journal dédié storage/logs/maintenance.log (pas de SSH sur l'offre Perso). Ne pas cliquer « Optimiser » en local :
+  la configuration mise en cache ignorerait ensuite les modifications du .env
 - [ ] Export SQL des seules tables du référentiel (mise à jour des points sans toucher aux données personnelles)
 - [ ] Procédure d'installation et de mise à jour pas à pas
 - [ ] Mise en ligne
@@ -427,6 +429,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-29 | Base unique partagée avec WordPress : préfixe `w40k_` sur les tables, noms d'index non préfixés (`prefix_indexes` à false) | Séparation nette des tables `wp_` ; avec le préfixe, un nom d'index dépassait les 64 caractères de MySQL. WordPress n'a pas de clés étrangères, donc pas de conflit de noms de contraintes. |
 | 2026-10-29 | `https` forcé quand `APP_URL` est en https | Derrière le proxy d'OVH, la requête peut sembler en http : liens et assets resteraient en http et seraient bloqués. |
 | 2026-10-29 | Paquet construit depuis un commit (`git archive`) et vendor local nettoyé par `composer install --no-dev` | La version en ligne correspond toujours à un commit (`VERSION`) ; le PHP de Laragon n'a pas l'extension zip pour télécharger les paquets. |
+| 2026-10-29 | Maintenance par l'interface (admin) limitée à trois commandes fixes (migrate --force, optimize, optimize:clear) | Pas de SSH sur l'offre Perso ; aucune commande libre exécutable depuis le web, chaque action journalisée. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
