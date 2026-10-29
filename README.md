@@ -120,7 +120,8 @@ Organisation sur l'hébergement (identifiant FTP **principal**, dont le dossier 
    `php artisan key:generate --show`. Garder une copie de ce `.env` en lieu sûr (gestionnaire de mots de passe) :
    changer d'`APP_KEY` déconnecte tout le monde (sessions et « Rester connecté »).
 7. **Envoyer par FTP** (WinSCP, fichiers cachés affichés : *Options → Préférences → Panneaux*) :
-   - `deploy/dist/w40k-app/` → `/home/<login>/w40k-app/`, puis le `.env` de l'étape 6 dans `w40k-app/` ;
+   - `deploy/dist/w40k-app/` → `/home/<login>/w40k-app/`, puis le `.env` de l'étape 6 dans `w40k-app/` (nommé exactement
+     `.env` : Windows ajoute parfois `.txt`) ;
    - `deploy/dist/krishnak/` → `/home/<login>/krishnak/` (remplace la page de test, `.htaccess` compris).
 8. **Vérifier le certificat** : onglet *Certificats SSL*, `krishnak.fr` doit être **Actif**.
 9. **Ouvrir** `https://krishnak.fr` (page Projets), puis `https://krishnak.fr/w40k` : se connecter avec le
@@ -428,7 +429,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
   compte admin saisi par l'utilisateur → `deploy/dist/install.sql.gz`), simulé sur une base vierge
 - [x] Procédure pas à pas dans le README (§ 2, « Mise en ligne ») : première installation, mise à jour du code,
   mise à jour des points, dépannage
-- [ ] Mise en ligne
+- [x] Mise en ligne le 29/10/2026 : https://krishnak.fr/w40k (version ed532cc)
 
 ### Audit et performances
 - [x] Premier audit (performance, maintenabilité) avec mesure des pages : taille et nombre de requêtes

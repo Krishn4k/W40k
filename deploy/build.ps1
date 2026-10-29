@@ -56,6 +56,9 @@ try {
     }
 
     Step "Préparation de $Destination"
+    # Le .env de production éventuellement rangé dans dist/w40k-app/ est conservé d'une construction à l'autre.
+    $envFile = Join-Path $Destination 'w40k-app\.env'
+    $savedEnv = if (Test-Path $envFile) { [IO.File]::ReadAllBytes($envFile) } else { $null }
     if (Test-Path $Destination) {
         Remove-Item $Destination -Recurse -Force
     }
@@ -63,6 +66,10 @@ try {
     $site = Join-Path $Destination 'krishnak'
     $public = Join-Path $site 'w40k'
     New-Item -ItemType Directory -Force -Path $app, $public, (Join-Path $site 'fonts') | Out-Null
+    if ($savedEnv) {
+        [IO.File]::WriteAllBytes($envFile, $savedEnv)
+        Write-Host '    .env de production conservé.'
+    }
 
     Step "Export du commit $version"
     $archive = Join-Path $Destination 'source.zip'
