@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
         Route::post('maintenance/migrations', [MaintenanceController::class, 'migrate'])->name('maintenance.migrate');
         Route::post('maintenance/optimisation', [MaintenanceController::class, 'optimize'])->name('maintenance.optimize');
         Route::post('maintenance/caches', [MaintenanceController::class, 'clearCaches'])->name('maintenance.clear-caches');
+        Route::get('maintenance/referentiel', [MaintenanceController::class, 'downloadReference'])->name('maintenance.reference');
     });
 
     Route::resource('collection', CollectionLotController::class)

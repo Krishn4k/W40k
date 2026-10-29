@@ -17,6 +17,18 @@
         </section>
     @endif
 
+    <section class="card mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="max-w-3xl text-sm">
+            <h2 class="mb-1 text-lg font-semibold">Référentiel (mise à jour des points)</h2>
+            <p class="text-zinc-600 dark:text-zinc-400">
+                Sur un poste de travail : télécharger ce fichier, le charger avec <code>php artisan reference:import-sql fichier.sql.gz</code>,
+                lancer <code>php artisan bsdata:import</code>, puis importer dans phpMyAdmin le fichier produit par <code>php artisan reference:export-sql</code>.
+            </p>
+            <p class="mt-1 text-amber-700 dark:text-amber-400">Pendant ce temps, ne pas modifier le référentiel en ligne (unités, détachements, traductions) : ces changements seraient écrasés.</p>
+        </div>
+        <a href="{{ route('admin.maintenance.reference') }}" class="btn-secondary">Télécharger le référentiel</a>
+    </section>
+
     <div class="grid gap-6 lg:grid-cols-3">
         <section class="card">
             <h2 class="mb-3 text-lg font-semibold">État</h2>
