@@ -106,6 +106,10 @@ try {
         Where-Object { $_.Name -notin @('hot', 'fonts-manifest.dev.json', 'storage', 'index.php') } |
         Copy-Item -Destination $public -Recurse -Force
     Copy-Item (Join-Path $PSScriptRoot 'index.php') -Destination $public -Force
+    # Redirections https et barre finale en tête du .htaccess de Laravel (celles de krishnak/ ne s'appliquent pas ici).
+    $htaccess = Join-Path $public '.htaccess'
+    $utf8 = [Text.UTF8Encoding]::new($false)
+    [IO.File]::WriteAllText($htaccess, [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'w40k.htaccess'), $utf8) + [IO.File]::ReadAllText($htaccess, $utf8), $utf8)
 
     Step 'Page d''accueil : krishnak/'
     Copy-Item (Join-Path $PSScriptRoot 'krishnak\*') -Destination $site -Recurse -Force

@@ -10,7 +10,6 @@ Options -Indexes
     RewriteCond %{HTTPS} !=on
     RewriteCond %{HTTP:X-Forwarded-Proto} !=https
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-    # /w40k sans barre finale : redirection propre (celle d'Apache ajoutait « :443 » derrière le proxy d'OVH).
-    RewriteRule ^w40k$ https://%{HTTP_HOST}/w40k/ [L,R=301]
 </IfModule>
+
+# Le dossier w40k/ a ses propres règles (https, barre finale) : voir deploy/w40k.htaccess.

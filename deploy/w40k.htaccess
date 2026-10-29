@@ -1,0 +1,15 @@
+# Ajouté par deploy/build.ps1 en tête du .htaccess de Laravel, dans krishnak/w40k/.
+# Les règles du .htaccess de krishnak/ ne s'appliquent pas ici (ce dossier a ses propres règles de réécriture).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # /w40k sans barre finale : redirection propre (celle d'Apache ajoutait « :443 » derrière le proxy d'OVH).
+    RewriteCond %{REQUEST_URI} ^/w40k$
+    RewriteRule ^ https://%{HTTP_HOST}/w40k/ [L,R=301]
+
+    # Toujours en https.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
