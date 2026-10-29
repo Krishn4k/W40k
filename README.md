@@ -82,6 +82,87 @@ et ouvrir http://w40k.test
 
 En développement, lancer `npm run dev` pour le rechargement à chaud des assets.
 
+### Mise en ligne : krishnak.fr/w40k (hébergement OVH Perso)
+
+L'offre Perso n'a pas d'accès SSH : tout se prépare sur le poste de travail (`deploy/`), s'envoie par FTP
+(WinSCP) et la base se gère dans phpMyAdmin. La base MySQL est **partagée avec le WordPress** de l'atelier :
+l'application n'y crée et n'y modifie que des tables `w40k_`.
+
+Organisation sur l'hébergement (identifiant FTP **principal**, dont le dossier est `/`) :
+
+```
+/home/<login>/
+├── www/          WordPress (atelierdepnoey.fr) : ne pas toucher
+├── krishnak/     racine de krishnak.fr (Multisite) : page d'accueil + w40k/ (partie publique de l'app)
+└── w40k-app/     code de l'application, .env et photos : jamais dans www/ ni dans krishnak/
+```
+
+#### Première installation
+
+1. **Sauvegarder la base** : espace client OVH → Hébergement → Bases de données → « ⋮ » → *Accéder à
+   phpMyAdmin* (ou *Créer une sauvegarde*) ; dans phpMyAdmin, onglet **Exporter**, format SQL.
+2. **Relever les accès à la base** dans `www/wp-config.php` (le télécharger par FTP) : `DB_HOST`, `DB_NAME`,
+   `DB_USER`, `DB_PASSWORD`. **Ne pas changer le mot de passe** de la base dans l'espace client : le WordPress
+   ne fonctionnerait plus.
+3. **Construire le paquet** (tout doit être commité) :
+   ```
+   powershell -ExecutionPolicy Bypass -File deploy\build.ps1
+   ```
+4. **Préparer la base** ; le script demande le nom, l'e-mail et le mot de passe du compte administrateur :
+   ```
+   powershell -ExecutionPolicy Bypass -File deploy\install-database.ps1
+   ```
+5. **Importer** `deploy/dist/install.sql.gz` dans phpMyAdmin : sélectionner la base, onglet **Importer**,
+   choisir le fichier, *Importer*. Vérifier que 32 tables `w40k_…` sont apparues à côté des tables `wp_…`.
+   Supprimer ensuite `install.sql.gz` du poste.
+6. **Créer le `.env` de production** : copier `deploy/.env.production.example` en `.env` (hors du dépôt) et le
+   remplir : accès relevés à l'étape 2 et `APP_KEY` générée une fois pour toutes avec
+   `php artisan key:generate --show`. Garder une copie de ce `.env` en lieu sûr (gestionnaire de mots de passe) :
+   changer d'`APP_KEY` déconnecte tout le monde (sessions et « Rester connecté »).
+7. **Envoyer par FTP** (WinSCP, fichiers cachés affichés : *Options → Préférences → Panneaux*) :
+   - `deploy/dist/w40k-app/` → `/home/<login>/w40k-app/`, puis le `.env` de l'étape 6 dans `w40k-app/` ;
+   - `deploy/dist/krishnak/` → `/home/<login>/krishnak/` (remplace la page de test, `.htaccess` compris).
+8. **Vérifier le certificat** : onglet *Certificats SSL*, `krishnak.fr` doit être **Actif**.
+9. **Ouvrir** `https://krishnak.fr` (page Projets), puis `https://krishnak.fr/w40k` : se connecter avec le
+   compte de l'étape 4. Dans **Administration → Maintenance** : « aucune migration en attente », puis
+   **Optimiser**.
+10. **Essai rapide** : ajouter un lot à la Collection, une photo, ouvrir une liste d'armée. Inviter ensuite les
+    joueurs depuis *Administration → Utilisateurs*.
+
+#### Mettre à jour l'application (nouvelle version du code)
+
+1. Commiter, puis `powershell -ExecutionPolicy Bypass -File deploy\build.ps1`.
+2. Si la version contient des migrations (nouveaux fichiers dans `database/migrations`) : sauvegarder la base
+   (phpMyAdmin → Exporter).
+3. WinSCP → *Commandes → Synchroniser*, sens **Local → Distant**, en excluant `.env` et `storage/`
+   (masque de fichiers : `| .env; storage/`, la barre verticale introduisant les exclusions) :
+   - `deploy/dist/w40k-app/` ↔ `/home/<login>/w40k-app/`
+   - `deploy/dist/krishnak/` ↔ `/home/<login>/krishnak/`
+4. **Administration → Maintenance** : *Appliquer les migrations* s'il y en a, puis **Optimiser**. La version
+   affichée doit correspondre au commit envoyé.
+
+#### Mettre à jour les points (BSData / Munitorum Field Manual)
+
+Le serveur est la référence ; n'importe quel poste avec le projet et Laragon convient. Pendant l'opération,
+ne pas modifier le référentiel en ligne (unités, détachements, traductions) : ce serait écrasé.
+
+1. **Administration → Maintenance → Télécharger le référentiel** (`referentiel-AAAAMMJJ-HHMM.sql.gz`).
+2. Sur le poste : `php artisan reference:import-sql chemin\vers\referentiel-….sql.gz`
+3. `php artisan bsdata:import` (télécharge BSData et le MFM, applique les traductions françaises).
+4. `php artisan reference:export-sql` → fichier dans `storage/app/exports/`.
+5. phpMyAdmin → base du serveur → **Importer** ce fichier. Les données personnelles ne sont jamais modifiées.
+
+#### En cas de problème
+
+| Symptôme | Piste |
+|---|---|
+| Erreur 500 | Lire `w40k-app/storage/logs/laravel-AAAA-MM-JJ.log` (FTP). |
+| Le site ignore une modification du `.env` | Maintenance → *Vider les caches* ; si le site ne s'affiche plus, supprimer par FTP `w40k-app/bootstrap/cache/config.php`. |
+| Page sans mise en forme | `krishnak/w40k/build/` manquant : renvoyer `deploy/dist/krishnak/`. |
+| « Page expirée » à la connexion | Vérifier `APP_URL=https://krishnak.fr/w40k` et `SESSION_PATH=/w40k` dans le `.env`. |
+| Import phpMyAdmin refusé (taille) | Importer le `.sql.gz` (compressé) plutôt qu'un `.sql`. |
+| Annuler une mise à jour ratée | Réimporter la sauvegarde de la base et renvoyer le paquet de la version précédente (`git checkout <commit>` puis `build.ps1`). |
+
 ## 3. Stack et choix techniques
 
 | Élément | Choix | Raison |
@@ -345,7 +426,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
   → import dans phpMyAdmin. Données personnelles jamais modifiées ; entités disparues supprimées seulement si inutilisées
 - [x] Script de première installation `deploy/install-database.ps1` (base temporaire, tables w40k_, référentiel,
   compte admin saisi par l'utilisateur → `deploy/dist/install.sql.gz`), simulé sur une base vierge
-- [ ] Procédure d'installation et de mise à jour pas à pas
+- [x] Procédure pas à pas dans le README (§ 2, « Mise en ligne ») : première installation, mise à jour du code,
+  mise à jour des points, dépannage
 - [ ] Mise en ligne
 
 ### Audit et performances
