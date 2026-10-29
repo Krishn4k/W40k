@@ -1,0 +1,13 @@
+# Racine de krishnak.fr (dossier krishnak/ de l'hébergement OVH).
+
+# Jamais de liste des fichiers d'un dossier sans page d'accueil.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Toujours en https (certificat Let's Encrypt de l'hébergement).
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>

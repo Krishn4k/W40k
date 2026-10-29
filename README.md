@@ -333,6 +333,15 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Seuils de réquisition lisibles dans les listes d'unités (« 10 fig. : 85 pts · 3e+ : 95 ») et saisissables dans la fiche d'une unité
 - [x] Thème : accent turquoise (l'ambre reste pour les avertissements), titres en Oswald, en-tête souligné
 
+### Mise en ligne (krishnak.fr/w40k, hébergement OVH Perso)
+- [x] Paquet de déploiement `deploy/build.ps1` : `w40k-app/` (code, dépendances de production, hors du web) et
+  `krishnak/` (page d'accueil « Projets », `.htaccess`, partie publique `w40k/`), testé en local sous `/w40k`
+- [x] Tables préfixées `w40k_` dans la base partagée avec WordPress (`DB_PREFIX`), suite de tests validée avec le préfixe
+- [ ] Page « Maintenance » (admin) : migrations en attente, optimisation, caches (pas de SSH sur l'offre Perso)
+- [ ] Export SQL des seules tables du référentiel (mise à jour des points sans toucher aux données personnelles)
+- [ ] Procédure d'installation et de mise à jour pas à pas
+- [ ] Mise en ligne
+
 ### Audit et performances
 - [x] Premier audit (performance, maintenabilité) avec mesure des pages : taille et nombre de requêtes
 - [x] Page d'une liste : options des formulaires d'unité envoyées une seule fois (831 → 135 Ko pour 8 unités)
@@ -414,6 +423,10 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-18 | Édition des statuts d'un lot en arrière-plan (`PATCH collection/{lot}/statuts`, JSON) ; validation partagée avec le formulaire complet (trait `ValidatesStatusCounts`) | Saisie rapide sans rechargement ; en cas de refus, la ligne revient à l'état précédent avec le message. |
 | 2026-10-18 | Police de titre Oswald via `bunny()` de `laravel-vite-plugin` : téléchargée au build, servie par l'application | Aucune dépendance npm ni requête externe au chargement des pages (`fontsource()` exigeait un paquet `@fontsource`). |
 | 2026-10-18 | Couleur d'accent définie une fois (`--color-accent-*` = turquoise) au lieu de classes `teal-*` dispersées | Changer de couleur d'accent ne touche qu'une ligne du thème. |
+| 2026-10-29 | Hébergement OVH Perso (sans SSH) : paquet préparé sur le PC et envoyé par FTP ; code dans `w40k-app/` à côté de `www/` et `krishnak/`, seule la partie publique dans `krishnak/w40k` | Le `.env` et le code ne sont jamais servis par le web, sans dépendre d'un `.htaccess` ; le WordPress de l'atelier reste intact. |
+| 2026-10-29 | Base unique partagée avec WordPress : préfixe `w40k_` sur les tables, noms d'index non préfixés (`prefix_indexes` à false) | Séparation nette des tables `wp_` ; avec le préfixe, un nom d'index dépassait les 64 caractères de MySQL. WordPress n'a pas de clés étrangères, donc pas de conflit de noms de contraintes. |
+| 2026-10-29 | `https` forcé quand `APP_URL` est en https | Derrière le proxy d'OVH, la requête peut sembler en http : liens et assets resteraient en http et seraient bloqués. |
+| 2026-10-29 | Paquet construit depuis un commit (`git archive`) et vendor local nettoyé par `composer install --no-dev` | La version en ligne correspond toujours à un commit (`VERSION`) ; le PHP de Laragon n'a pas l'extension zip pour télécharger les paquets. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

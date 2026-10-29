@@ -200,13 +200,15 @@ class TranslationController extends Controller
     {
         $table = (new (ReferenceTranslations::TYPES[$type]))->getTable();
         $factionColumn = $type === 'enhancement' ? 'detachments.faction_id' : "{$table}.faction_id";
+        // Raw SQL must name the real tables, including the configured prefix (e.g. "w40k_" in production).
+        $prefix = DB::getTablePrefix();
 
         return DB::table($table)
             ->when($type === 'enhancement', fn ($query) => $query->join('detachments', 'detachments.id', '=', 'enhancements.detachment_id'))
-            ->when($byFaction, fn ($query) => $query->selectRaw("{$factionColumn} as faction_id")->groupBy($factionColumn))
+            ->when($byFaction, fn ($query) => $query->selectRaw("{$prefix}{$factionColumn} as faction_id")->groupBy($factionColumn))
             ->selectRaw('COUNT(*) as total')
-            ->selectRaw("SUM(JSON_EXTRACT({$table}.name, '$.fr') IS NULL) as missing")
-            ->selectRaw("SUM(EXISTS(SELECT 1 FROM translation_reviews WHERE translation_reviews.translatable_type = ? AND translation_reviews.translatable_id = {$table}.id)) as review", [$type])
+            ->selectRaw("SUM(JSON_EXTRACT({$prefix}{$table}.name, '$.fr') IS NULL) as missing")
+            ->selectRaw("SUM(EXISTS(SELECT 1 FROM {$prefix}translation_reviews WHERE {$prefix}translation_reviews.translatable_type = ? AND {$prefix}translation_reviews.translatable_id = {$prefix}{$table}.id)) as review", [$type])
             ->get()
             ->keyBy(fn (object $row): int|string => $byFaction ? $row->faction_id : 'all');
     }
