@@ -30,17 +30,21 @@ class MaintenanceController extends Controller
 
     public function migrate(Request $request): RedirectResponse
     {
-        return $this->run($request, 'migrate', ['--force' => true], 'Migrations appliquées.');
+        return $this->run($request, ['migrate' => ['--force' => true]], 'Migrations appliquées.');
     }
 
+    /**
+     * Cache the configuration, events and views. Routes are left uncached: in a sub-directory (krishnak.fr/w40k),
+     * the cached route matcher answers 405 on the home page (/w40k/), and the gain is negligible for this app.
+     */
     public function optimize(Request $request): RedirectResponse
     {
-        return $this->run($request, 'optimize', [], 'Application optimisée (configuration, routes et vues en cache).');
+        return $this->run($request, ['config:cache' => [], 'event:cache' => [], 'view:cache' => []], 'Application optimisée (configuration, événements et vues en cache).');
     }
 
     public function clearCaches(Request $request): RedirectResponse
     {
-        return $this->run($request, 'optimize:clear', [], 'Caches vidés.');
+        return $this->run($request, ['optimize:clear' => []], 'Caches vidés.');
     }
 
     /**
@@ -59,20 +63,28 @@ class MaintenanceController extends Controller
     }
 
     /**
-     * Run one of the commands above, log it and show its output on the maintenance page.
+     * Run the commands above in order (stopping at the first failure), log them and show their output.
      *
-     * @param  array<string, mixed>  $options
+     * @param  array<string, array<string, mixed>>  $commands  Options by command name.
      */
-    private function run(Request $request, string $command, array $options, string $status): RedirectResponse
+    private function run(Request $request, array $commands, string $status): RedirectResponse
     {
-        $exitCode = Artisan::call($command, $options);
-        $output = trim(Artisan::output());
+        $outputs = [];
 
-        $this->log("{$command} par {$request->user()->email} (code {$exitCode})", ['output' => $output]);
+        foreach ($commands as $command => $options) {
+            $exitCode = Artisan::call($command, $options);
+            $outputs[] = trim(Artisan::output());
+            $this->log("{$command} par {$request->user()->email} (code {$exitCode})", ['output' => end($outputs)]);
+
+            if ($exitCode !== 0) {
+                $status = "« {$command} » a échoué (code {$exitCode}).";
+                break;
+            }
+        }
 
         return redirect()->route('admin.maintenance.index')
-            ->with('status', $exitCode === 0 ? $status : "« {$command} » a échoué (code {$exitCode}).")
-            ->with('maintenance_output', $output);
+            ->with('status', $status)
+            ->with('maintenance_output', implode("\n", array_filter($outputs)));
     }
 
     /**

@@ -72,7 +72,7 @@
         <section class="card flex flex-col gap-3">
             <h2 class="text-lg font-semibold">Performances</h2>
             <p class="text-sm text-zinc-600 dark:text-zinc-400">
-                Après chaque mise en ligne : <strong>Optimiser</strong> met en cache la configuration, les routes et les vues.
+                Après chaque mise en ligne : <strong>Optimiser</strong> met en cache la configuration, les événements et les vues.
                 Après une modification du <code>.env</code> ou un comportement étrange : <strong>Vider les caches</strong>.
             </p>
             <div class="mt-auto flex flex-col gap-2">

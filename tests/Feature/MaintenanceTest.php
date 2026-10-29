@@ -87,16 +87,30 @@ class MaintenanceTest extends TestCase
         fclose($handle);
     }
 
-    public function test_optimize_and_clear_caches_run_their_command(): void
+    public function test_optimize_caches_everything_but_routes_and_clear_caches_undoes_it(): void
     {
-        Artisan::shouldReceive('call')->once()->with('optimize', [])->andReturn(0);
-        Artisan::shouldReceive('call')->once()->with('optimize:clear', [])->andReturn(0);
-        Artisan::shouldReceive('output')->twice()->andReturn('done');
+        foreach (['config:cache', 'event:cache', 'view:cache', 'optimize:clear'] as $command) {
+            Artisan::shouldReceive('call')->once()->with($command, [])->andReturn(0);
+        }
+        Artisan::shouldReceive('call')->never()->with('route:cache', []);
+        Artisan::shouldReceive('call')->never()->with('optimize', []);
+        Artisan::shouldReceive('output')->times(4)->andReturn('done');
 
         $this->actingAs($this->admin)->post(route('admin.maintenance.optimize'))
-            ->assertSessionHas('status', 'Application optimisée (configuration, routes et vues en cache).');
+            ->assertSessionHas('status', 'Application optimisée (configuration, événements et vues en cache).')
+            ->assertSessionHas('maintenance_output', "done\ndone\ndone");
         $this->actingAs($this->admin)->post(route('admin.maintenance.clear-caches'))
             ->assertSessionHas('status', 'Caches vidés.')
             ->assertSessionHas('maintenance_output', 'done');
+    }
+
+    public function test_a_failing_command_stops_the_sequence(): void
+    {
+        Artisan::shouldReceive('call')->once()->with('config:cache', [])->andReturn(1);
+        Artisan::shouldReceive('call')->never()->with('event:cache', []);
+        Artisan::shouldReceive('output')->once()->andReturn('error');
+
+        $this->actingAs($this->admin)->post(route('admin.maintenance.optimize'))
+            ->assertSessionHas('status', '« config:cache » a échoué (code 1).');
     }
 }

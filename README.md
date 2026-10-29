@@ -520,6 +520,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-29 | Le serveur est la référence du référentiel ; le poste de travail n'est qu'un atelier d'import (télécharge, importe BSData/MFM, renvoie) | L'utilisateur change souvent d'ordinateur et valide des traductions en ligne : un import depuis zéro sur un autre poste donnerait d'autres identifiants. |
 | 2026-10-29 | Import SQL côté serveur par phpMyAdmin uniquement, jamais par le site | Exécuter du SQL envoyé par le web permettrait, avec un compte admin compromis, d'atteindre toute la base (WordPress compris). |
 | 2026-10-29 | Export : entités par `INSERT … ON DUPLICATE KEY UPDATE`, tables de détail remplacées, suppressions protégées par toutes les clés étrangères (tables dérivées), une transaction | Aucune donnée personnelle touchée ; un export rejoué est sans effet ; compatible MySQL et MariaDB. |
+| 2026-10-29 | « Optimiser » met en cache configuration, événements et vues, mais pas les routes | En sous-dossier (krishnak.fr/w40k), le cache de routes renvoie 405 sur la page d'accueil (/w40k/) ; gain négligeable pour cette application. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente
