@@ -525,6 +525,10 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 
 ## 7. Problèmes connus et points en attente
 
+- En ligne, `krishnak.fr/w40k` (sans barre finale) est redirigé par Apache vers `https://krishnak.fr:443/w40k/` :
+  fonctionnel, mais « :443 » apparaît. Chez OVH, cette redirection passe avant les `.htaccess` ; `DirectorySlash Off`
+  donne un 403 (essayé puis annulé). Les liens de l'application et de la page d'accueil utilisent `/w40k/`.
+
 - Missions primaires : dans une paire « A / B » de l'Event Companion, la mission A est attribuée au joueur
   de la première disposition (lecture de la mise en page des cartes, à confirmer dans l'appli).
 
