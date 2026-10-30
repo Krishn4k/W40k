@@ -119,10 +119,7 @@ class TranslationController extends Controller
             'status' => $status,
             'factionId' => $factionId,
             'search' => $search,
-            'factionOptions' => Faction::query()->with('parent')->get()
-                ->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])
-                ->sort()
-                ->all(),
+            'factionOptions' => Faction::selectOptions(),
         ]);
     }
 

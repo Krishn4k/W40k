@@ -18,16 +18,26 @@ final class UnitSelectOptions
     public static function from(Collection $units): array
     {
         return $units
-            ->map(fn (Unit $unit): array => [
-                'value' => $unit->id,
-                'label' => (string) $unit->name,
-                'group' => $unit->faction->fullName(),
-                'legends' => $unit->isLegends(),
-                'search' => self::searchText($unit),
-            ])
+            ->map(fn (Unit $unit): array => self::option($unit))
             ->sortBy([['group', 'asc'], ['label', 'asc']])
             ->values()
             ->all();
+    }
+
+    /**
+     * One unit as an option.
+     *
+     * @return array{value: int, label: string, group: string, legends: bool, search: string}
+     */
+    public static function option(Unit $unit): array
+    {
+        return [
+            'value' => $unit->id,
+            'label' => (string) $unit->name,
+            'group' => $unit->faction->fullName(),
+            'legends' => $unit->isLegends(),
+            'search' => self::searchText($unit),
+        ];
     }
 
     /**

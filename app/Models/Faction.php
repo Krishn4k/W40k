@@ -92,6 +92,19 @@ class Faction extends Model
     }
 
     /**
+     * Every faction as select options: id => full name ("Space Marines › Blood Angels"), sorted.
+     *
+     * @return array<int, string>
+     */
+    public static function selectOptions(): array
+    {
+        return self::query()->with('parent')->get()
+            ->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])
+            ->sort()
+            ->all();
+    }
+
+    /**
      * Identifiers of this faction and of its parent, used to resolve inherited units and detachments.
      *
      * @return array<int, int>

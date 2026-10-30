@@ -38,7 +38,7 @@ class UnitController extends Controller
 
         return view('units.index', [
             'units' => $units,
-            'factionOptions' => $this->factionOptions(),
+            'factionOptions' => Faction::selectOptions(),
             'selectedFactionId' => $factionId,
             'selectedRole' => $role,
             'search' => $search,
@@ -133,26 +133,11 @@ class UnitController extends Controller
 
         return [
             'unit' => $unit,
-            'factionOptions' => $this->factionOptions(),
+            'factionOptions' => Faction::selectOptions(),
             'pointSet' => $pointSet,
             'costs' => $unit->exists && $pointSet
                 ? $unit->pointCosts()->whereBelongsTo($pointSet)->orderBy('model_count')->orderBy('from_copy')->get(['model_count', 'from_copy', 'points'])->toArray()
                 : [],
         ];
-    }
-
-    /**
-     * Factions as select options, sub-factions shown under their parent.
-     *
-     * @return array<int, string>
-     */
-    private function factionOptions(): array
-    {
-        return Faction::query()
-            ->with('parent')
-            ->get()
-            ->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])
-            ->sort()
-            ->all();
     }
 }

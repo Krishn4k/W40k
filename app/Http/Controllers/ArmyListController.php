@@ -159,11 +159,9 @@ class ArmyListController extends Controller
      */
     private function formData(ArmyList $armyList): array
     {
-        $factions = Faction::query()->with('parent')->get();
-
         return [
             'armyList' => $armyList,
-            'factionOptions' => $factions->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])->sort()->all(),
+            'factionOptions' => Faction::selectOptions(),
             // Each detachment is sent once, under its own faction; a sub-faction also offers its parent's (merged in the browser).
             'detachmentsByFaction' => Detachment::query()->get()
                 ->map(fn (Detachment $detachment): array => [
@@ -182,7 +180,7 @@ class ArmyListController extends Controller
                 ->groupBy('factionId')
                 ->map(fn ($detachments) => $detachments->values()->all())
                 ->all(),
-            'parentFactionIds' => $factions->whereNotNull('parent_id')->pluck('parent_id', 'id')->all(),
+            'parentFactionIds' => Faction::query()->whereNotNull('parent_id')->pluck('parent_id', 'id')->all(),
             'forceDispositions' => collect(ForceDisposition::cases())
                 ->map(fn (ForceDisposition $disposition): array => ['value' => $disposition->value, 'label' => $disposition->label().' ('.$disposition->englishName().')'])
                 ->all(),
@@ -224,11 +222,7 @@ class ArmyListController extends Controller
         return [
             'usedLotIds' => $armyList->entries->pluck('collection_lot_id')->filter()->values()->all(),
             'units' => $units->map(fn (Unit $unit): array => [
-                'id' => $unit->id,
-                'name' => (string) $unit->name,
-                'group' => $unit->faction->fullName(),
-                'legends' => $unit->isLegends(),
-                'search' => UnitSelectOptions::searchText($unit),
+                ...UnitSelectOptions::option($unit),
                 'canTakeEnhancement' => $unit->role === UnitRole::Character && ! $unit->is_epic_hero,
                 'canTakeUpgrade' => ! $unit->is_epic_hero,
                 'squadSizes' => $unit->pointCosts->groupBy('model_count')->map(fn ($tiers, int $modelCount): array => [

@@ -127,10 +127,7 @@ class GameController extends Controller
                     return [$opponent->value => "{$mission['en']} ({$mission['fr']})"];
                 })->all(),
             ])->all(),
-            'factionOptions' => Faction::query()->with('parent')->get()
-                ->mapWithKeys(fn (Faction $faction): array => [$faction->id => $faction->fullName()])
-                ->sort()
-                ->all(),
+            'factionOptions' => Faction::selectOptions(),
         ];
     }
 }

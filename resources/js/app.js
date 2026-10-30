@@ -426,7 +426,7 @@ Alpine.data('armyListEntryForm', (optionsElementId, initial = {}) => ({
     isWarlord: initial.isWarlord ?? false,
 
     get unit() {
-        return this.options.units.find((unit) => unit.id === Number(this.unitId)) ?? null;
+        return this.options.units.find((unit) => unit.value === Number(this.unitId)) ?? null;
     },
 
     get squadSizes() {

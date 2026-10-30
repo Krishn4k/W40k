@@ -34,7 +34,7 @@
                 'name' => 'unit_id',
                 'id' => 'unit_id_'.$formId,
                 'label' => 'Unité',
-                'optionsExpression' => 'options.units.map((unit) => ({ value: unit.id, label: unit.name, group: unit.group, legends: unit.legends, search: unit.search }))',
+                'optionsExpression' => 'options.units',
                 'selected' => $value('unit_id', $entry?->unit_id),
                 'required' => true,
             ])
