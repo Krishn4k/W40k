@@ -1,5 +1,10 @@
 # Ajouté par deploy/build.ps1 en tête du .htaccess de Laravel, dans krishnak/w40k/.
 # Les règles du .htaccess de krishnak/ ne s'appliquent pas ici (ce dossier a ses propres règles de réécriture).
+
+# La redirection automatique d'Apache vers /w40k/ passe avant ces règles et ajoute « :443 » (proxy OVH) :
+# elle est désactivée, la règle ci-dessous fait la même chose proprement.
+DirectorySlash Off
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
