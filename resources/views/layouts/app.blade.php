@@ -53,12 +53,19 @@
                         </li>
                     @endcan
                     @can('admin')
+                        {{-- Inscriptions en attente de validation, signalées aux administrateurs dans le menu. --}}
+                        @php($pendingRegistrations = App\Models\User::query()->pending()->count())
                         <li>
                             <a href="{{ route('admin.users.index') }}"
                                @class([
                                    'block py-1 hover:text-accent-700 dark:hover:text-accent-400',
                                    'font-semibold text-accent-700 dark:text-accent-400' => request()->routeIs('admin.*'),
-                               ])>Administration</a>
+                               ])>
+                                Administration
+                                @if ($pendingRegistrations > 0)
+                                    <span title="Inscriptions en attente" class="ml-1 rounded-full bg-amber-500 px-1.5 text-xs font-semibold text-white">{{ $pendingRegistrations }}</span>
+                                @endif
+                            </a>
                         </li>
                     @endcan
                     <li class="flex items-center gap-3 border-t border-zinc-200 pt-2 sm:border-0 sm:pt-0 dark:border-zinc-800">

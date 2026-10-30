@@ -17,6 +17,48 @@
         </form>
     </div>
 
+    <section class="card mb-6 flex flex-col gap-2" x-data="{ copied: false }">
+        <h2 class="text-lg font-semibold">Lien d'inscription</h2>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">À partager : chacun crée son compte, qui reste en attente jusqu'à ta validation ci-dessous.</p>
+        <div class="flex flex-wrap items-center gap-2">
+            <input type="text" readonly value="{{ route('register') }}" aria-label="Lien d'inscription" class="form-input mt-0 min-w-0 flex-1 font-mono text-xs" @focus="$event.target.select()">
+            <button type="button" class="btn-secondary" @click="navigator.clipboard.writeText(@js(route('register'))); copied = true; setTimeout(() => copied = false, 2000)"
+                    x-text="copied ? 'Copié !' : 'Copier'">Copier</button>
+        </div>
+    </section>
+
+    <section class="mb-8">
+        <h2 class="mb-3 text-lg font-semibold">Inscriptions en attente ({{ $pendingUsers->count() }})</h2>
+        @if ($pendingUsers->isEmpty())
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">Aucune inscription en attente.</p>
+        @else
+            <ul class="card flex flex-col divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+                @foreach ($pendingUsers as $pendingUser)
+                    <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                        <div>
+                            <span class="font-medium">{{ $pendingUser->name }}</span>
+                            <span class="text-zinc-500">— {{ $pendingUser->email }}</span>
+                            <span class="block text-xs text-zinc-500">Inscrit le {{ $pendingUser->created_at->format('d/m/Y à H:i') }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <form method="POST" action="{{ route('admin.users.approve', $pendingUser) }}">
+                                @csrf
+                                @method('PUT')
+                                <button type="submit" class="btn-primary">Valider</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.users.reject', $pendingUser) }}" onsubmit="return confirm('Refuser et supprimer cette inscription ?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-danger">Refuser</button>
+                            </form>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </section>
+
+    <h2 class="mb-3 text-lg font-semibold">Comptes</h2>
     <div class="card mb-8 overflow-x-auto p-0">
         <table class="w-full text-left text-sm">
             <thead class="border-b border-zinc-200 text-xs text-zinc-500 uppercase dark:border-zinc-800">

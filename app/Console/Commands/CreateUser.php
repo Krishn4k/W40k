@@ -42,7 +42,7 @@ class CreateUser extends Command
         }
 
         $user = User::create($validator->validated());
-        $user->forceFill(['role' => $this->option('admin') ? UserRole::Admin : UserRole::Player])->save();
+        $user->forceFill(['role' => $this->option('admin') ? UserRole::Admin : UserRole::Player, 'approved_at' => now()])->save();
 
         $this->info("Compte créé : {$user->email} ({$user->role->label()}).");
 

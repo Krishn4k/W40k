@@ -8,6 +8,7 @@ use App\Http\Controllers\ArmyListController;
 use App\Http\Controllers\ArmyListEntryController;
 use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CollectionLotController;
 use App\Http\Controllers\DashboardController;
@@ -23,6 +24,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::get('connexion', [SessionController::class, 'create'])->name('login');
     Route::post('connexion', [SessionController::class, 'store'])->name('login.store');
+
+    Route::get('inscription', [RegistrationController::class, 'create'])->name('register');
+    Route::post('inscription', [RegistrationController::class, 'store'])->middleware('throttle:5,1')->name('register.store');
 
     Route::get('invitation/{token}', [InvitationAcceptanceController::class, 'show'])->name('invitations.show');
     Route::post('invitation/{token}', [InvitationAcceptanceController::class, 'store'])->middleware('throttle:10,1')->name('invitations.accept');
@@ -41,6 +45,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('can:admin')->group(function () {
         Route::get('utilisateurs', [UserController::class, 'index'])->name('users.index');
         Route::put('utilisateurs/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
+        Route::put('utilisateurs/{user}/validation', [UserController::class, 'approve'])->name('users.approve');
+        Route::delete('utilisateurs/{user}', [UserController::class, 'reject'])->name('users.reject');
         Route::post('utilisateurs/{user}/reinitialisation', [UserController::class, 'resetLink'])->name('users.reset-link');
         Route::post('invitations', [InvitationController::class, 'store'])->name('invitations.store');
         Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy'])->name('invitations.destroy');

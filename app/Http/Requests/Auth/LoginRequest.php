@@ -47,7 +47,9 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = $this->only('email', 'password');
+
+        if (! Auth::validate($credentials)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -56,6 +58,15 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        // Right password, but a self-registered account waiting for approval: no session is opened.
+        if (! Auth::getProvider()->retrieveByCredentials($credentials)->isApproved()) {
+            throw ValidationException::withMessages([
+                'email' => 'Ton compte attend la validation d\'un administrateur.',
+            ]);
+        }
+
+        Auth::attempt($credentials, $this->boolean('remember'));
     }
 
     /**

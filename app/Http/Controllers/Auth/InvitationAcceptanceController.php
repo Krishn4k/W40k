@@ -37,6 +37,7 @@ class InvitationAcceptanceController extends Controller
 
         $user = DB::transaction(function () use ($invitation, $validated): User {
             $user = User::create($validated);
+            $user->forceFill(['approved_at' => now()])->save();
             $invitation->update(['accepted_at' => now(), 'user_id' => $user->id]);
 
             return $user;

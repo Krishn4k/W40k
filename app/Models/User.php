@@ -8,6 +8,8 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -42,7 +44,27 @@ class User extends Authenticatable
             'password' => 'hashed',
             'playable_min_status' => PaintStatus::class,
             'role' => UserRole::class,
+            'approved_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Self-registered accounts can log in once an administrator has approved them.
+     */
+    public function isApproved(): bool
+    {
+        return $this->approved_at !== null;
+    }
+
+    /**
+     * Accounts waiting for an administrator's approval.
+     *
+     * @param  Builder<User>  $query
+     */
+    #[Scope]
+    protected function pending(Builder $query): void
+    {
+        $query->whereNull('approved_at');
     }
 
     /**

@@ -306,7 +306,7 @@ La table `translation_reviews` (polymorphe, une ligne par nom « à vérifier »
 
 | Table | Colonnes clés |
 |---|---|
-| `users` | + `role` (`player`, `translator`, `admin` ; enum `UserRole`, non assignable en masse ; remplace `is_admin`) |
+| `users` | + `role` (`player`, `translator`, `admin` ; enum `UserRole`, non assignable en masse ; remplace `is_admin`), `approved_at` (vide = inscription en attente de validation) |
 | `invitations` | `token_hash` (SHA-256, unique), `created_by`, `expires_at` (+7 jours), `accepted_at`, `user_id` |
 
 La réinitialisation de mot de passe réutilise `password_reset_tokens` (lien généré par un admin, 60 minutes).
@@ -398,6 +398,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Changement de mot de passe dans les paramètres
 - [x] Rôles joueur / traducteur / administrateur : le traducteur modifie le référentiel et les traductions
   (Gate `edit-reference`) sans accès à l'Administration (Gate `admin`) ; rôle choisi par compte dans l'écran Utilisateurs
+- [x] Inscription libre par un lien unique à partager (`/inscription`, 5 envois par minute) : compte en attente,
+  connexion refusée jusqu'à validation ; l'admin valide ou refuse dans Utilisateurs, compteur dans le menu
 ### Traductions françaises du référentiel
 - [x] Export / import CSV des noms (`reference:export-translations`, `reference:import-translations`), appliqué après chaque import BSData
 - [x] Pré-remplissage à vérifier : 40 factions, 147 mots-clés courants, unités, détachements et optimisations Space Marines et Blood Angels
@@ -525,6 +527,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-29 | « Optimiser » met en cache configuration, événements et vues, mais pas les routes | En sous-dossier (krishnak.fr/w40k), le cache de routes renvoie 405 sur la page d'accueil (/w40k/) ; gain négligeable pour cette application. |
 | 2026-10-30 | Champ `role` (enum joueur / traducteur / administrateur) à la place de `is_admin`, migré automatiquement | Un troisième niveau sans combinaisons absurdes de cases ; un futur rôle s'ajoute sans migration de structure. |
 | 2026-10-30 | Le traducteur modifie aussi le référentiel (unités, points, détachements), pas seulement les traductions | Choix de l'utilisateur : « toute l'app sauf l'admin ». Une modification de points en ligne peut être écrasée par la mise à jour suivante du référentiel. |
+| 2026-10-30 | Inscription libre sur une page publique, compte en attente jusqu'à validation par un admin (`approved_at`) ; invitations conservées (validées d'office) | Un seul lien à partager ; la validation filtre les inconnus et les robots, sans serveur mail. |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

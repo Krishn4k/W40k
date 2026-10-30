@@ -23,6 +23,6 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'test@example.com'],
             ['name' => 'Test User', 'password' => 'password', 'email_verified_at' => now()],
-        )->forceFill(['role' => UserRole::Admin])->save();
+        )->forceFill(['role' => UserRole::Admin, 'approved_at' => now()])->save();
     }
 }

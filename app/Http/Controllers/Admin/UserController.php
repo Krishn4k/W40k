@@ -13,14 +13,15 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Accounts, roles, password reset links and pending invitations.
+ * Accounts, roles, self-registrations waiting for approval, password reset links and pending invitations.
  */
 class UserController extends Controller
 {
     public function index(): View
     {
         return view('admin.users.index', [
-            'users' => User::query()->withCount(['collectionLots', 'armyLists', 'games'])->orderBy('name')->get(),
+            'users' => User::query()->whereNotNull('approved_at')->withCount(['collectionLots', 'armyLists', 'games'])->orderBy('name')->get(),
+            'pendingUsers' => User::query()->pending()->oldest()->get(),
             'invitations' => Invitation::query()->pending()->with('creator')->latest()->get(),
         ]);
     }
@@ -39,6 +40,30 @@ class UserController extends Controller
         $user->forceFill(['role' => $role])->save();
 
         return back()->with('status', "{$user->name} : rôle « {$role->label()} ».");
+    }
+
+    /**
+     * Approve a self-registered account: it can log in from now on.
+     */
+    public function approve(User $user): RedirectResponse
+    {
+        abort_if($user->isApproved(), 404);
+
+        $user->forceFill(['approved_at' => now()])->save();
+
+        return back()->with('status', "Inscription de {$user->name} validée : le compte peut se connecter.");
+    }
+
+    /**
+     * Refuse a self-registration: the pending account is deleted. Approved accounts cannot be removed this way.
+     */
+    public function reject(User $user): RedirectResponse
+    {
+        abort_if($user->isApproved(), 404);
+
+        $user->delete();
+
+        return back()->with('status', "Inscription de {$user->name} refusée.");
     }
 
     /**

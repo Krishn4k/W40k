@@ -32,5 +32,9 @@
 
             <button type="submit" class="btn-primary">Se connecter</button>
         </form>
+
+        <p class="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
+            Pas encore de compte ? <a href="{{ route('register') }}" class="link">S'inscrire</a>
+        </p>
     </div>
 @endsection
