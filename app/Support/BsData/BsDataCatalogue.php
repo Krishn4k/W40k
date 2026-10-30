@@ -2,8 +2,10 @@
 
 namespace App\Support\BsData;
 
+use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use RuntimeException;
 
@@ -22,6 +24,42 @@ final class BsDataCatalogue
     public readonly bool $isLibrary;
 
     public readonly bool $isGameSystem;
+
+    /**
+     * Elements matched by an XPath expression, relative to the context node when given (other node types are left out).
+     *
+     * @return list<DOMElement>
+     */
+    public function elements(string $expression, ?DOMNode $context = null): array
+    {
+        $elements = [];
+
+        foreach ($this->xpath->query($expression, $context) ?: [] as $node) {
+            if ($node instanceof DOMElement) {
+                $elements[] = $node;
+            }
+        }
+
+        return $elements;
+    }
+
+    /**
+     * Values of the attributes matched by an XPath expression (e.g. "//b:entryLink/@targetId").
+     *
+     * @return list<string>
+     */
+    public function attributeValues(string $expression, ?DOMNode $context = null): array
+    {
+        $values = [];
+
+        foreach ($this->xpath->query($expression, $context) ?: [] as $node) {
+            if ($node instanceof DOMAttr) {
+                $values[] = $node->value;
+            }
+        }
+
+        return $values;
+    }
 
     public function __construct(public readonly string $path)
     {
@@ -163,8 +201,8 @@ final class BsDataCatalogue
     {
         $ids = [];
 
-        foreach ($this->xpath->query('//b:entryLink/@targetId') as $attribute) {
-            $ids[$attribute->value] = true;
+        foreach ($this->attributeValues('//b:entryLink/@targetId') as $targetId) {
+            $ids[$targetId] = true;
         }
 
         return $ids;
@@ -193,11 +231,11 @@ final class BsDataCatalogue
     /**
      * Every element carrying an id, for cross-file link resolution.
      *
-     * @return iterable<DOMElement>
+     * @return list<DOMElement>
      */
-    public function identifiedEntries(): iterable
+    public function identifiedEntries(): array
     {
-        return $this->xpath->query('//b:selectionEntry[@id] | //b:selectionEntryGroup[@id]');
+        return $this->elements('//b:selectionEntry[@id] | //b:selectionEntryGroup[@id]');
     }
 
     /**

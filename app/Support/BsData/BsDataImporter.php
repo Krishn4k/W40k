@@ -125,7 +125,7 @@ final class BsDataImporter
     {
         $home = $this->library->homeOf($library);
 
-        return $this->factions[$home?->id ?? $library->id] ?? null;
+        return $this->factions[$home->id ?? $library->id] ?? null;
     }
 
     private function importFaction(BsDataCatalogue $catalogue): void
@@ -285,7 +285,7 @@ final class BsDataImporter
 
     private function importDetachmentGroup(BsDataCatalogue $catalogue, DOMElement $group, ?Faction $defaultFaction): void
     {
-        foreach ($catalogue->xpath->query('b:selectionEntries/b:selectionEntry | b:entryLinks/b:entryLink', $group) as $node) {
+        foreach ($catalogue->elements('b:selectionEntries/b:selectionEntry | b:entryLinks/b:entryLink', $group) as $node) {
             $resolved = $this->library->resolve($node, $catalogue);
             if ($resolved === null) {
                 continue;
@@ -332,7 +332,7 @@ final class BsDataImporter
                 continue;
             }
 
-            foreach ($catalogue->xpath->query('.//b:selectionEntry[@type="upgrade"]', $group) as $entry) {
+            foreach ($catalogue->elements('.//b:selectionEntry[@type="upgrade"]', $group) as $entry) {
                 $this->importEnhancement($entry, $catalogue, $detachment);
             }
         }
@@ -340,8 +340,8 @@ final class BsDataImporter
         $detachmentsByBsDataId = collect($this->detachmentsByCatalogue)->flatten()->keyBy('bsdata_id');
 
         foreach ($catalogue->flatEnhancementEntries() as $entry) {
-            $detachment = collect($catalogue->xpath->query(".//b:modifier[@field='hidden']//b:condition/@childId", $entry))
-                ->map(fn ($attribute): ?Detachment => $detachmentsByBsDataId->get($attribute->value))
+            $detachment = collect($catalogue->attributeValues(".//b:modifier[@field='hidden']//b:condition/@childId", $entry))
+                ->map(fn (string $childId): ?Detachment => $detachmentsByBsDataId->get($childId))
                 ->filter()
                 ->first();
 
@@ -414,7 +414,7 @@ final class BsDataImporter
     {
         $categories = [];
 
-        foreach ($catalogue->xpath->query('b:categoryLinks/b:categoryLink', $entry) as $link) {
+        foreach ($catalogue->elements('b:categoryLinks/b:categoryLink', $entry) as $link) {
             $categories[$link->getAttribute('targetId')] = $link->getAttribute('name');
         }
 

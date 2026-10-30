@@ -516,13 +516,11 @@ final class ArmyListAnalysis
      */
     public function attachedUnits(): Collection
     {
-        $entries = $this->armyList->entries;
+        $attachedByBodyguard = $this->armyList->entries->whereNotNull('attached_to_entry_id')->groupBy('attached_to_entry_id');
 
-        return $entries
-            ->whereNotNull('attached_to_entry_id')
-            ->groupBy('attached_to_entry_id')
-            ->filter(fn (Collection $attached, int $bodyguardId): bool => $entries->contains('id', $bodyguardId))
-            ->map(fn (Collection $attached, int $bodyguardId): Collection => collect([$entries->firstWhere('id', $bodyguardId)])->merge($attached))
+        return $this->armyList->entries
+            ->filter(fn (ArmyListEntry $entry): bool => $attachedByBodyguard->has($entry->id))
+            ->map(fn (ArmyListEntry $entry): Collection => collect([$entry])->merge($attachedByBodyguard[$entry->id]))
             ->values();
     }
 

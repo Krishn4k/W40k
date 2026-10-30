@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+/**
+ * @property string|null $bsdata_id Identifier in BSData (null for records entered by hand).
+ */
 #[Fillable(['bsdata_id', 'faction_id', 'name', 'role', 'is_epic_hero'])]
 class Unit extends Model
 {

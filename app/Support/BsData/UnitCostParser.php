@@ -106,7 +106,7 @@ final class UnitCostParser
     {
         $total = ['min' => 0, 'max' => 0];
 
-        $children = $catalogue->xpath->query('b:selectionEntries/b:selectionEntry | b:selectionEntryGroups/b:selectionEntryGroup | b:entryLinks/b:entryLink', $parent);
+        $children = $catalogue->elements('b:selectionEntries/b:selectionEntry | b:selectionEntryGroups/b:selectionEntryGroup | b:entryLinks/b:entryLink', $parent);
         foreach ($children as $child) {
             $range = $this->nodeRange($child, $catalogue);
             $total['min'] += $range['min'];
@@ -172,7 +172,7 @@ final class UnitCostParser
         $modifiers = [];
         $skipped = 0;
 
-        $elements = $catalogue->xpath->query(
+        $elements = $catalogue->elements(
             "b:modifiers/b:modifier[@field='{$this->pointsTypeId}'] | b:modifierGroups/b:modifierGroup/b:modifiers/b:modifier[@field='{$this->pointsTypeId}']",
             $unit,
         );
@@ -222,7 +222,7 @@ final class UnitCostParser
     {
         $predicates = [];
 
-        foreach ($catalogue->xpath->query('b:conditions/b:condition', $element) as $condition) {
+        foreach ($catalogue->elements('b:conditions/b:condition', $element) as $condition) {
             $predicate = $this->conditionPredicate($condition, $unit, $minSize);
             if ($predicate === null) {
                 return null;
@@ -230,7 +230,7 @@ final class UnitCostParser
             $predicates[] = $predicate;
         }
 
-        foreach ($catalogue->xpath->query('b:conditionGroups/b:conditionGroup', $element) as $group) {
+        foreach ($catalogue->elements('b:conditionGroups/b:conditionGroup', $element) as $group) {
             $predicate = $this->conditionsPredicate($group, $catalogue, $unit, $minSize, $group->getAttribute('type') ?: 'and');
             if ($predicate === null) {
                 return null;

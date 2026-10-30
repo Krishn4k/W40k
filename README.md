@@ -187,6 +187,7 @@ ne pas modifier le référentiel en ligne (unités, détachements, traductions) 
 | CSS | Tailwind CSS 4 via Vite | Inclus par défaut dans Laravel 13, styles utilitaires sans CSS sur mesure. |
 | JS | Alpine.js 3 (npm, bundlé par Vite) | Interactivité légère (formulaires dynamiques, calcul de points en direct) sans SPA. |
 | Police | Instrument Sans via Fontsource (npm) | Police auto-hébergée, build reproductible sans accès réseau, aucune requête externe à l'exécution. |
+| Qualité | Pint, Larastan niveau 5 (dev), GitHub Actions | Style homogène, erreurs de type repérées sans exécuter le code, vérification automatique à chaque push. |
 | Assistance IA | Laravel Boost (dev) | Consignes et skills adaptées aux versions installées, serveur MCP (docs, schéma BDD) pour l'assistant de code. |
 | Environnement | Laragon | Environnement local Windows tout-en-un, virtual hosts automatiques (`w40k.test`). |
 
@@ -456,8 +457,11 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Page d'une liste : options des formulaires d'unité envoyées une seule fois (831 → 135 Ko pour 8 unités)
 - [x] Index des listes : données de référence chargées une fois pour toutes les listes (57 → 17 requêtes pour 5 listes, nombre constant)
 - [x] Formulaire de liste : détachements chargés en une requête, une seule fois par faction (49 → 10 requêtes, 119 → 78 Ko)
-- [ ] Pistes de maintenabilité : règles d'analyse en classes, scope commun pour la recherche JSON sur les noms,
-  options de factions unifiées, analyse statique (Larastan, nouvelle dépendance à valider)
+- [x] Options de factions (`Faction::selectOptions()`) et d'unités (`UnitSelectOptions::option()`) centralisées
+- [x] Recherche SQL sur les noms traduits regroupée dans le trait `HasLocalizedName`
+- [x] Règles de composition typées (`CompositionRuleType`), une méthode par règle dans l'analyse
+- [x] Analyse statique Larastan niveau 5 sans erreur (`composer analyse`) et CI GitHub Actions : Pint, Larastan et tests
+  sur MySQL à chaque push (`.github/workflows/tests.yml`)
 
 ### Phase ultérieure : Localisation (autres langues que FR/EN)
 
@@ -545,6 +549,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-30 | Le traducteur modifie aussi le référentiel (unités, points, détachements), pas seulement les traductions | Choix de l'utilisateur : « toute l'app sauf l'admin ». Une modification de points en ligne peut être écrasée par la mise à jour suivante du référentiel. |
 | 2026-10-30 | Inscription libre sur une page publique, compte en attente jusqu'à validation par un admin (`approved_at`) ; invitations conservées (validées d'office) | Un seul lien à partager ; la validation filtre les inconnus et les robots, sans serveur mail. |
 | 2026-10-30 | Lien de secours des migrations par jeton secret (`MAINTENANCE_TOKEN`), sans connexion ni session | Une migration de la table des comptes a rendu inaccessible la page Maintenance qui devait l'appliquer (contournée par SQL dans phpMyAdmin). |
+| 2026-10-31 | Larastan niveau 5 avec `parseModelCastsMethod` ; aucune exception ni baseline | Les `casts()` des modèles ne déclarent qu'`array<string, string>` : Larastan doit lire leur contenu pour connaître les enums et `LocalizedText`. Les 76 alertes initiales ont été corrigées à la source. |
 | 2026-10-31 | `app/` et `database/` exclus du classmap Composer ; le build compare l'empreinte de `vendor/` à celle du paquet précédent | `vendor/` (6 400 fichiers) ne change plus qu'avec les dépendances et peut être exclu de l'envoi FTP ; les classes de l'application se chargent en PSR-4 (coût négligeable avec OPcache). |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 

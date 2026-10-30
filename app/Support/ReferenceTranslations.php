@@ -136,7 +136,7 @@ final class ReferenceTranslations
     /**
      * Set a record's French name and review status.
      */
-    public function apply(Model $record, string $frenchName, bool $toReview): void
+    public function apply(Faction|Detachment|Enhancement|Unit|Keyword $record, string $frenchName, bool $toReview): void
     {
         $record->update(['name' => [...$record->name->toArray(), 'fr' => trim($frenchName)]]);
         $record->markTranslationToReview($toReview);

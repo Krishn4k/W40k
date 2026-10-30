@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * @property string|null $bsdata_id Identifier in BSData (null for records entered by hand).
+ */
 #[Fillable(['bsdata_id', 'parent_id', 'slug', 'name'])]
 class Faction extends Model
 {

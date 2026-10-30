@@ -189,7 +189,7 @@ class TranslationController extends Controller
     /**
      * Number of records, of names without French and of names to check, for a type (optionally by faction).
      *
-     * @return Collection<int|string, object{total: int, missing: int, review: int}>
+     * @return Collection<int|string, \stdClass> Rows with total, missing and review counts.
      */
     private function statusCounts(string $type, bool $byFaction = false): Collection
     {

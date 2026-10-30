@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * @property string|null $bsdata_id Identifier in BSData (null for records entered by hand).
+ */
 #[Fillable(['bsdata_id', 'faction_id', 'name', 'detachment_points', 'unique_tag', 'force_dispositions'])]
 class Detachment extends Model
 {

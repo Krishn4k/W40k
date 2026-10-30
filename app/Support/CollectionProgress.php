@@ -7,6 +7,7 @@ use App\Models\CollectionLot;
 use App\Models\PointSet;
 use App\Models\UnitPointCost;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 /**
@@ -21,7 +22,7 @@ final class CollectionProgress
 {
     /**
      * @param  Collection<int, CollectionLot>  $lots
-     * @param  Collection<int, Collection<int, UnitPointCost>>  $costsByUnit  Cost tiers by unit id, sorted by squad size.
+     * @param  Collection<array-key, EloquentCollection<int, UnitPointCost>>  $costsByUnit  Cost tiers by unit id, sorted by squad size.
      */
     public function __construct(
         private readonly Collection $lots,

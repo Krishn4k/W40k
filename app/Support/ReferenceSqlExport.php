@@ -108,7 +108,7 @@ final class ReferenceSqlExport
     /**
      * Rows in an order that satisfies the table's own foreign keys (parent factions first).
      *
-     * @return Collection<int, object>
+     * @return Collection<int, \stdClass>
      */
     private function rows(string $table): Collection
     {
@@ -120,7 +120,7 @@ final class ReferenceSqlExport
 
     /**
      * @param  list<string>  $columns
-     * @param  Collection<int, object>  $rows
+     * @param  Collection<int, \stdClass>  $rows
      */
     private function insertStatement(string $table, array $columns, Collection $rows): string
     {

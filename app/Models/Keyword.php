@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @property string|null $bsdata_id Identifier in BSData (null for records entered by hand).
+ */
 #[Fillable(['bsdata_id', 'name'])]
 class Keyword extends Model
 {

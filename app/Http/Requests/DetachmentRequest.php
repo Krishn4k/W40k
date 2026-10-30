@@ -47,7 +47,7 @@ class DetachmentRequest extends FormRequest
             'name.en' => ['required', 'string', 'max:255'],
             'name.fr' => ['nullable', 'string', 'max:255'],
             'enhancements' => ['array', 'max:20'],
-            'enhancements.*.id' => ['nullable', 'integer', Rule::exists('enhancements', 'id')->where('detachment_id', $detachment?->id ?? 0)],
+            'enhancements.*.id' => ['nullable', 'integer', Rule::exists('enhancements', 'id')->where('detachment_id', $detachment->id ?? 0)],
             'enhancements.*.name.en' => ['required', 'string', 'max:255'],
             'enhancements.*.name.fr' => ['nullable', 'string', 'max:255'],
             'enhancements.*.points' => ['nullable', 'integer', 'min:0', 'max:500'],

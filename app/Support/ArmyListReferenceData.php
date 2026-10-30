@@ -38,7 +38,7 @@ final class ArmyListReferenceData
     ];
 
     /**
-     * @param  Collection<string, Collection<int, UnitPointCost>>  $unitCosts  Tiers keyed by "set:unit:model_count", highest first copy first.
+     * @param  Collection<array-key, EloquentCollection<int, UnitPointCost>>  $unitCosts  Tiers keyed by "set:unit:model_count", highest first copy first.
      * @param  Collection<string, EnhancementPointCost>  $enhancementCosts  Keyed by "set:enhancement".
      * @param  Collection<string, UnitWargearCost>  $wargearCosts  Keyed by "set:unit:name".
      * @param  Collection<string, string>  $attachments  Attachment kinds keyed by "leader_unit_id:bodyguard_unit_id".
@@ -61,7 +61,7 @@ final class ArmyListReferenceData
         (new EloquentCollection($armyLists->all()))->loadMissing(self::LIST_RELATIONS);
 
         $currentPointSet = PointSet::current();
-        $pointSetIds = $armyLists->map(fn (ArmyList $armyList): ?int => $armyList->pointSet?->id ?? $currentPointSet?->id)->filter()->unique()->values();
+        $pointSetIds = $armyLists->map(fn (ArmyList $armyList): ?int => $armyList->pointSet->id ?? $currentPointSet?->id)->filter()->unique()->values();
         $entries = $armyLists->flatMap(fn (ArmyList $armyList): Collection => $armyList->entries);
         $unitIds = $entries->pluck('unit_id')->unique()->values();
         $enhancementIds = $entries->pluck('enhancement_id')->filter()->unique()->values();
