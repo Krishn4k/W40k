@@ -127,32 +127,90 @@ Alpine.data('translationRow', (initial) => ({
 }));
 
 /**
- * Liste déroulante d'unités filtrable, regroupée par faction.
+ * Champ unique de choix d'une unité : on tape, une liste filtrée (groupée par faction, 50 résultats au plus)
+ * s'ouvre dessous ; souris ou clavier (↑ ↓ Entrée, Échap). Seul l'identifiant choisi est envoyé (champ caché).
+ * Annonce chaque choix par l'évènement « unit-selected ».
  */
-Alpine.data('filterableSelect', (options, selected = '') => ({
+Alpine.data('unitCombobox', (options, selected = '', required = false) => ({
     options,
-    selected,
+    selected: String(selected ?? ''),
+    required,
     query: '',
+    open: false,
+    activeIndex: 0,
     showLegends: false,
 
-    get visibleOptions() {
-        return this.options.filter((option) => isVisible(option, this.query.trim(), this.showLegends, this.selected));
+    init() {
+        this.query = this.selectedLabel;
+        this.$watch('showLegends', () => (this.activeIndex = 0));
+        this.$watch('selected', () => this.$refs.input.setCustomValidity(this.validityMessage));
+        this.$refs.input.setCustomValidity(this.validityMessage);
     },
 
-    get visibleCount() {
-        return this.visibleOptions.length;
+    get selectedOption() {
+        return this.options.find((option) => String(option.value) === this.selected) ?? null;
     },
 
-    get groups() {
-        const groups = new Map();
-        for (const option of this.visibleOptions) {
-            if (! groups.has(option.group)) {
-                groups.set(option.group, []);
-            }
-            groups.get(option.group).push(option);
+    get selectedLabel() {
+        return this.selectedOption ? `${this.selectedOption.label} · ${this.selectedOption.group}` : '';
+    },
+
+    get validityMessage() {
+        return this.required && this.selected === '' ? 'Choisis une unité dans la liste.' : '';
+    },
+
+    /**
+     * Le libellé de l'unité choisie, encore affiché tel quel, ne filtre pas la liste.
+     */
+    get matches() {
+        const query = this.query === this.selectedLabel ? '' : this.query.trim();
+
+        return this.options.filter((option) => isVisible(option, query, this.showLegends, null));
+    },
+
+    get results() {
+        return this.matches.slice(0, 50);
+    },
+
+    openList() {
+        this.open = true;
+        this.activeIndex = 0;
+    },
+
+    move(step) {
+        if (! this.open) {
+            return this.openList();
         }
+        this.activeIndex = Math.max(0, Math.min(this.results.length - 1, this.activeIndex + step));
+        this.$nextTick(() => this.$root.querySelector(`[data-index="${this.activeIndex}"]`)?.scrollIntoView({ block: 'nearest' }));
+    },
 
-        return [...groups].map(([name, groupOptions]) => ({ name, options: groupOptions }));
+    choose(option) {
+        this.selected = String(option.value);
+        this.query = this.selectedLabel;
+        this.open = false;
+        this.$dispatch('unit-selected', option.value);
+    },
+
+    clear() {
+        this.selected = '';
+        this.query = '';
+        this.$dispatch('unit-selected', '');
+        this.$refs.input.focus();
+    },
+
+    /**
+     * En quittant le champ : texte effacé = plus d'unité ; sinon l'affichage revient à l'unité choisie.
+     */
+    close() {
+        if (! this.open) {
+            return;
+        }
+        this.open = false;
+        if (this.query.trim() === '' && this.selected !== '') {
+            this.clear();
+        }
+        this.query = this.selectedLabel;
     },
 }));
 
@@ -367,29 +425,8 @@ Alpine.data('armyListEntryForm', (optionsElementId, initial = {}) => ({
     wargear: initial.wargear ?? {},
     isWarlord: initial.isWarlord ?? false,
 
-    unitQuery: '',
-    showLegends: false,
-
     get unit() {
         return this.options.units.find((unit) => unit.id === Number(this.unitId)) ?? null;
-    },
-
-    /**
-     * Unités disponibles filtrées par la recherche et les Légendes, regroupées par faction.
-     */
-    get unitGroups() {
-        const groups = new Map();
-        for (const unit of this.options.units) {
-            if (! isVisible({ ...unit, value: unit.id }, this.unitQuery.trim(), this.showLegends, this.unitId)) {
-                continue;
-            }
-            if (! groups.has(unit.group)) {
-                groups.set(unit.group, []);
-            }
-            groups.get(unit.group).push(unit);
-        }
-
-        return [...groups].map(([name, units]) => ({ name, options: units }));
     },
 
     get squadSizes() {

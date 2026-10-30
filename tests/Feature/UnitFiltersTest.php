@@ -115,7 +115,7 @@ class UnitFiltersTest extends TestCase
 
         $this->actingAs($this->user)->get(route('collection.create'))
             ->assertOk()
-            ->assertSee('filterableSelect', false)
+            ->assertSee('unitCombobox', false)
             ->assertSee("{$quote}legends{$quote}:true", false)
             ->assertSee('sanguinary priest prêtre sanguinien', false);
     }

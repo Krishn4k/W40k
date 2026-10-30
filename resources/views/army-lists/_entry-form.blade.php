@@ -29,25 +29,15 @@
     @endif
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="lg:col-span-2">
-            <label class="form-label" for="unit_id_{{ $formId }}">Unité</label>
-            <div class="mt-1 flex flex-wrap items-center gap-2">
-                <input type="search" x-model="unitQuery" placeholder="Rechercher…" aria-label="Rechercher une unité" class="form-input mt-0 min-w-0 flex-1">
-                <label class="flex items-center gap-1.5 text-xs whitespace-nowrap">
-                    <input type="checkbox" x-model="showLegends" class="rounded border-zinc-300 dark:border-zinc-700">
-                    Légendes
-                </label>
-            </div>
-            <select id="unit_id_{{ $formId }}" name="unit_id" required x-model="unitId" @change="unitChanged()" class="form-input mt-1">
-                <option value="">—</option>
-                <template x-for="group in unitGroups" :key="group.name">
-                    <optgroup :label="group.name">
-                        <template x-for="unit in group.options" :key="unit.id">
-                            <option :value="unit.id" :selected="String(unit.id) === String(unitId)" x-text="unit.name"></option>
-                        </template>
-                    </optgroup>
-                </template>
-            </select>
+        <div class="lg:col-span-2" @unit-selected="unitId = $event.detail; unitChanged()">
+            @include('partials.filterable-unit-select', [
+                'name' => 'unit_id',
+                'id' => 'unit_id_'.$formId,
+                'label' => 'Unité',
+                'optionsExpression' => 'options.units.map((unit) => ({ value: unit.id, label: unit.name, group: unit.group, legends: unit.legends, search: unit.search }))',
+                'selected' => $value('unit_id', $entry?->unit_id),
+                'required' => true,
+            ])
         </div>
 
         <div>

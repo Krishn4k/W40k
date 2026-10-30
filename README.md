@@ -431,6 +431,8 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Seuils de réquisition lisibles dans les listes d'unités (« 10 fig. : 85 pts · 3e+ : 95 ») et saisissables dans la fiche d'une unité
 - [x] Thème : accent turquoise (l'ambre reste pour les avertissements), titres en Oswald, en-tête souligné
 - [x] Logo Warhammer (SVG turquoise) en favicon et devant le nom de l'application dans l'en-tête
+- [x] Choix d'une unité en un seul champ (on tape, la liste filtrée s'ouvre dessous, souris ou clavier) : ajout
+  rapide, fiche d'un lot (unité et « Joué comme ») et formulaire d'unité des listes d'armée
 
 ### Mise en ligne (krishnak.fr/w40k, hébergement OVH Perso)
 - [x] Paquet de déploiement `deploy/build.ps1` : `w40k-app/` (code, dépendances de production, hors du web) et
