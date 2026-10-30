@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UnitRole;
+use App\Models\Concerns\HasLocalizedName;
 use App\Models\Concerns\HasTranslationReview;
 use App\Support\LocalizedText;
 use Database\Factories\UnitFactory;
@@ -21,7 +22,7 @@ use Illuminate\Support\Str;
 class Unit extends Model
 {
     /** @use HasFactory<UnitFactory> */
-    use HasFactory, HasTranslationReview;
+    use HasFactory, HasLocalizedName, HasTranslationReview;
 
     /**
      * Get the attributes that should be cast.
@@ -146,7 +147,7 @@ class Unit extends Model
     #[Scope]
     protected function withoutLegends(Builder $query): void
     {
-        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.en')) NOT LIKE ?", ['%[Legends]%']);
+        $query->whereRaw(self::nameSql('en').' NOT LIKE ?', ['%[Legends]%']);
     }
 
     /**
@@ -158,19 +159,14 @@ class Unit extends Model
     #[Scope]
     protected function matchingSearch(Builder $query, string $search): void
     {
-        $translatedNameLike = fn (Builder $query, string $pattern): Builder => $query->where(fn (Builder $query) => $query
-            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.en')) COLLATE utf8mb4_unicode_ci LIKE ?", [$pattern])
-            ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.fr')) COLLATE utf8mb4_unicode_ci LIKE ?", [$pattern]));
-
         foreach (preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY) as $word) {
-            $pattern = '%'.addcslashes($word, '\\%_').'%';
             $roles = collect(UnitRole::cases())
                 ->filter(fn (UnitRole $role): bool => str_contains(Str::lower(Str::ascii($role->label().' '.$role->value)), Str::lower(Str::ascii($word))))
                 ->values();
 
-            $query->where(fn (Builder $query) => $translatedNameLike($query, $pattern)
-                ->orWhereHas('keywords', fn (Builder $query) => $translatedNameLike($query, $pattern))
-                ->orWhereHas('faction', fn (Builder $query) => $translatedNameLike($query, $pattern))
+            $query->where(fn (Builder $query) => $query->whereNameContains($word)
+                ->orWhereHas('keywords', fn (Builder $query) => $query->whereNameContains($word))
+                ->orWhereHas('faction', fn (Builder $query) => $query->whereNameContains($word))
                 ->when($roles->isNotEmpty(), fn (Builder $query) => $query->orWhereIn('role', $roles)));
         }
     }
@@ -221,8 +217,7 @@ class Unit extends Model
     protected function sortedBy(Builder $query, string $column, string $direction, ?PointSet $pointSet): void
     {
         $direction = $direction === 'desc' ? 'desc' : 'asc';
-        $locale = preg_replace('/[^a-z]/', '', app()->getLocale()) ?: 'en';
-        $displayedName = "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(name, '$.{$locale}')), JSON_UNQUOTE(JSON_EXTRACT(name, '$.en'))) COLLATE utf8mb4_unicode_ci";
+        $displayedName = 'COALESCE('.self::nameSql(app()->getLocale()).', '.self::nameSql('en').') COLLATE utf8mb4_unicode_ci';
 
         match ($column) {
             'role' => $query->orderByRaw(

@@ -442,7 +442,7 @@ final class BsDataImporter
         }
 
         $keyword = Keyword::query()->where('bsdata_id', $categoryId)->first()
-            ?? Keyword::query()->whereNull('bsdata_id')->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.en')) = ?", [$name])->first()
+            ?? Keyword::query()->whereNull('bsdata_id')->whereEnglishName($name)->first()
             ?? new Keyword;
 
         $keyword->fill(['bsdata_id' => $categoryId, 'name' => $this->englishName($keyword, $name)])->save();

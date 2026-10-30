@@ -120,7 +120,7 @@ class UnitController extends Controller
      */
     private function findOrCreateKeyword(string $englishName): Keyword
     {
-        return Keyword::query()->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, '$.en'))) = ?", [mb_strtolower($englishName)])->first()
+        return Keyword::query()->whereEnglishName($englishName)->first()
             ?? Keyword::create(['name' => ['en' => $englishName]]);
     }
 

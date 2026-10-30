@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLocalizedName;
 use App\Models\Concerns\HasTranslationReview;
 use App\Support\LocalizedText;
 use Database\Factories\EnhancementFactory;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Enhancement extends Model
 {
     /** @use HasFactory<EnhancementFactory> */
-    use HasFactory, HasTranslationReview;
+    use HasFactory, HasLocalizedName, HasTranslationReview;
 
     /**
      * Get the attributes that should be cast.

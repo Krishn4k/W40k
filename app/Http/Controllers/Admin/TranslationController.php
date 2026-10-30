@@ -106,9 +106,7 @@ class TranslationController extends Controller
             ->when($status === 'validated', fn (Builder $query) => $query->whereNotNull('name->fr')->whereDoesntHave('translationReview'))
             ->when($factionId && in_array($type, ['unit', 'detachment'], true), fn (Builder $query) => $query->where('faction_id', $factionId))
             ->when($factionId && $type === 'enhancement', fn (Builder $query) => $query->whereHas('detachment', fn (Builder $query) => $query->where('faction_id', $factionId)))
-            ->when($search !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query
-                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.en')) COLLATE utf8mb4_unicode_ci LIKE ?", ['%'.$search.'%'])
-                ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(name, '$.fr')) COLLATE utf8mb4_unicode_ci LIKE ?", ['%'.$search.'%'])))
+            ->when($search !== '', fn (Builder $query) => $query->whereNameContains($search))
             ->orderBy('name->en')
             ->paginate(50)
             ->withQueryString();
