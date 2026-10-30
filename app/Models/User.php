@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\PaintStatus;
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -26,7 +27,7 @@ class User extends Authenticatable
      */
     protected $attributes = [
         'playable_min_status' => 'assembled',
-        'is_admin' => false,
+        'role' => 'player',
     ];
 
     /**
@@ -40,8 +41,24 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'playable_min_status' => PaintStatus::class,
-            'is_admin' => 'boolean',
+            'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * Administrators manage accounts, registrations and maintenance.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
+    /**
+     * Translators and administrators edit the reference data and its translations.
+     */
+    public function canEditReference(): bool
+    {
+        return $this->role->canEditReference();
     }
 
     /**

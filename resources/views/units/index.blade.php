@@ -8,7 +8,7 @@
             <p class="text-sm"><a href="{{ route('factions.index') }}" class="link">Factions</a></p>
             <h1 class="text-2xl font-semibold">Unités</h1>
         </div>
-        @can('admin')
+        @can('edit-reference')
         <a href="{{ route('units.create', ['faction_id' => $selectedFactionId]) }}" class="btn-primary">Nouvelle unité</a>
         @endcan
     </div>

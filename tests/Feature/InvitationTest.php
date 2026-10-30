@@ -53,7 +53,7 @@ class InvitationTest extends TestCase
         $response->assertRedirect(route('home'));
         $user = User::query()->where('email', 'nouveau@example.com')->sole();
         $this->assertAuthenticatedAs($user);
-        $this->assertFalse($user->is_admin);
+        $this->assertFalse($user->isAdmin());
         $this->assertTrue($invitation->fresh()->user->is($user));
         $this->assertNotNull($invitation->fresh()->accepted_at);
     }

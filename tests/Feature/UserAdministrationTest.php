@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\Faction;
 use App\Models\Unit;
 use App\Models\User;
@@ -57,47 +58,72 @@ class UserAdministrationTest extends TestCase
             ->assertSee('Créer une invitation');
     }
 
-    public function test_an_admin_can_grant_and_remove_admin_rights(): void
+    public function test_an_admin_changes_the_role_of_an_account(): void
     {
-        $this->actingAs($this->admin)->put(route('admin.users.toggle-admin', $this->player));
-        $this->assertTrue($this->player->fresh()->is_admin);
+        $this->actingAs($this->admin)->put(route('admin.users.role', $this->player), ['role' => 'translator'])
+            ->assertSessionHas('status', 'Joueur : rôle « Traducteur ».');
+        $this->assertSame(UserRole::Translator, $this->player->fresh()->role);
 
-        $this->actingAs($this->admin)->put(route('admin.users.toggle-admin', $this->player));
-        $this->assertFalse($this->player->fresh()->is_admin);
+        $this->actingAs($this->admin)->put(route('admin.users.role', $this->player), ['role' => 'admin']);
+        $this->assertSame(UserRole::Admin, $this->player->fresh()->role);
+
+        $this->actingAs($this->admin)->put(route('admin.users.role', $this->player), ['role' => 'emperor'])->assertSessionHasErrors('role');
+        $this->assertSame(UserRole::Admin, $this->player->fresh()->role);
     }
 
-    public function test_the_last_admin_keeps_their_rights(): void
+    public function test_the_last_admin_keeps_their_role(): void
     {
-        $this->actingAs($this->admin)->put(route('admin.users.toggle-admin', $this->admin))->assertSessionHasErrors('user');
+        $this->actingAs($this->admin)->put(route('admin.users.role', $this->admin), ['role' => 'player'])->assertSessionHasErrors('user');
 
-        $this->assertTrue($this->admin->fresh()->is_admin);
+        $this->assertSame(UserRole::Admin, $this->admin->fresh()->role);
     }
 
-    public function test_a_player_cannot_promote_themselves(): void
+    public function test_players_and_translators_cannot_change_roles(): void
     {
-        $this->actingAs($this->player)->put(route('admin.users.toggle-admin', $this->player))->assertForbidden();
+        $translator = User::factory()->translator()->create();
 
-        $this->assertFalse($this->player->fresh()->is_admin);
+        $this->actingAs($this->player)->put(route('admin.users.role', $this->player), ['role' => 'admin'])->assertForbidden();
+        $this->actingAs($translator)->put(route('admin.users.role', $translator), ['role' => 'admin'])->assertForbidden();
+
+        $this->assertSame(UserRole::Player, $this->player->fresh()->role);
+        $this->assertSame(UserRole::Translator, $translator->fresh()->role);
+    }
+
+    public function test_translators_edit_the_reference_and_translations_but_not_the_administration(): void
+    {
+        $translator = User::factory()->translator()->create();
+        $unit = Unit::factory()->create();
+
+        $this->actingAs($translator)->get(route('translations.overview'))->assertOk();
+        $this->actingAs($translator)->get(route('units.edit', $unit))->assertOk();
+        $this->actingAs($translator)->get(route('home'))->assertSee('Traductions')->assertDontSee('Administration');
+
+        $this->actingAs($translator)->get(route('admin.users.index'))->assertForbidden();
+        $this->actingAs($translator)->get(route('admin.maintenance.index'))->assertForbidden();
+
+        $this->actingAs($this->player)->get(route('translations.overview'))->assertForbidden();
+        $this->actingAs($this->player)->get(route('units.edit', $unit))->assertForbidden();
+        $this->actingAs($this->player)->get(route('home'))->assertDontSee('Traductions');
     }
 
     public function test_the_create_user_command_can_create_an_admin(): void
     {
         $this->artisan('app:create-user', ['--name' => 'Chef', '--email' => 'chef@example.com', '--admin' => true])
             ->expectsQuestion('Mot de passe (8 caractères minimum)', 'secret-password')
-            ->expectsOutput('Compte créé : chef@example.com (administrateur)')
+            ->expectsOutput('Compte créé : chef@example.com (Administrateur).')
             ->assertSuccessful();
 
-        $this->assertTrue(User::query()->where('email', 'chef@example.com')->sole()->is_admin);
+        $this->assertTrue(User::query()->where('email', 'chef@example.com')->sole()->isAdmin());
     }
 
-    public function test_is_admin_cannot_be_mass_assigned(): void
+    public function test_the_role_cannot_be_mass_assigned(): void
     {
         $this->actingAs($this->player)->put(route('settings.update'), [
             'name' => 'Joueur',
             'playable_min_status' => 'assembled',
-            'is_admin' => '1',
+            'role' => 'admin',
         ]);
 
-        $this->assertFalse($this->player->fresh()->is_admin);
+        $this->assertSame(UserRole::Player, $this->player->fresh()->role);
     }
 }

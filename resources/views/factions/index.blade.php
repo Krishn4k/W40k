@@ -11,7 +11,7 @@
         <div class="flex gap-2">
             <a href="{{ route('point-sets.index') }}" class="btn-secondary">Versions des points</a>
             <a href="{{ route('units.index') }}" class="btn-secondary">Toutes les unités</a>
-            @can('admin')
+            @can('edit-reference')
             <a href="{{ route('factions.create') }}" class="btn-primary">Nouvelle faction</a>
             @endcan
         </div>

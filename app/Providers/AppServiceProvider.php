@@ -37,7 +37,8 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        Gate::define('admin', fn (User $user): bool => $user->is_admin);
+        Gate::define('admin', fn (User $user): bool => $user->isAdmin());
+        Gate::define('edit-reference', fn (User $user): bool => $user->canEditReference());
 
         Relation::enforceMorphMap([
             'faction' => Faction::class,

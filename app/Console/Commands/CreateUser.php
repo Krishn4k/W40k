@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -41,9 +42,9 @@ class CreateUser extends Command
         }
 
         $user = User::create($validator->validated());
-        $user->forceFill(['is_admin' => $this->option('admin')])->save();
+        $user->forceFill(['role' => $this->option('admin') ? UserRole::Admin : UserRole::Player])->save();
 
-        $this->info("Compte créé : {$user->email}".($user->is_admin ? ' (administrateur)' : ''));
+        $this->info("Compte créé : {$user->email} ({$user->role->label()}).");
 
         return self::SUCCESS;
     }

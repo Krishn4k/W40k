@@ -48,7 +48,7 @@
                         {{ $unit->keywords->map(fn ($keyword) => (string) $keyword->name)->sort()->join(', ') }}
                     </td>
                     <td class="px-4 py-3 text-right">
-                        @can('admin')
+                        @can('edit-reference')
                             <a href="{{ route('units.edit', $unit) }}" class="link">Modifier</a>
                         @endcan
                     </td>

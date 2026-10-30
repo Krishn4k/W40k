@@ -43,7 +43,7 @@
                                ])>{{ $label }}</a>
                         </li>
                     @endforeach
-                    @can('admin')
+                    @can('edit-reference')
                         <li>
                             <a href="{{ route('translations.overview') }}"
                                @class([
@@ -51,6 +51,8 @@
                                    'font-semibold text-accent-700 dark:text-accent-400' => request()->routeIs('translations.*'),
                                ])>Traductions</a>
                         </li>
+                    @endcan
+                    @can('admin')
                         <li>
                             <a href="{{ route('admin.users.index') }}"
                                @class([

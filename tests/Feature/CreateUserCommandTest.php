@@ -15,7 +15,7 @@ class CreateUserCommandTest extends TestCase
     {
         $this->artisan('app:create-user', ['--name' => 'Yann', '--email' => 'yann@example.com'])
             ->expectsQuestion('Mot de passe (8 caractères minimum)', 'secret-password')
-            ->expectsOutput('Compte créé : yann@example.com')
+            ->expectsOutput('Compte créé : yann@example.com (Joueur).')
             ->assertSuccessful();
 
         $user = User::query()->where('email', 'yann@example.com')->firstOrFail();

@@ -10,7 +10,7 @@
             <p class="text-sm"><a href="{{ route('factions.index') }}" class="link">Référentiel</a></p>
             <h1 class="text-2xl font-semibold">Versions des points</h1>
         </div>
-        @can('admin')
+        @can('edit-reference')
         <a href="{{ route('point-sets.create') }}" class="btn-primary">Nouvelle version</a>
         @endcan
     </div>
@@ -44,7 +44,7 @@
                             <td class="px-4 py-3 text-right">{{ $pointSet->unit_point_costs_count }}</td>
                             <td class="px-4 py-3 text-right">{{ $pointSet->army_lists_count }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
-                                @can('admin')
+                                @can('edit-reference')
                                 <a href="{{ route('point-sets.edit', $pointSet) }}" class="link">Modifier</a>
                                 <form method="POST" action="{{ route('point-sets.destroy', $pointSet) }}" class="ml-3 inline" onsubmit="return confirm('Supprimer cette version et tous ses coûts ?')">
                                     @csrf

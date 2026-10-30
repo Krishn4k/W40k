@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Accounts, administrator rights, password reset links and pending invitations.
+ * Accounts, roles, password reset links and pending invitations.
  */
 class UserController extends Controller
 {
@@ -23,19 +26,19 @@ class UserController extends Controller
     }
 
     /**
-     * Grant or remove administrator rights; the last administrator cannot lose them.
+     * Change an account's role; the last administrator cannot lose the role.
      */
-    public function toggleAdmin(User $user): RedirectResponse
+    public function updateRole(Request $request, User $user): RedirectResponse
     {
-        if ($user->is_admin && User::query()->where('is_admin', true)->count() === 1) {
+        $role = UserRole::from($request->validate(['role' => ['required', Rule::enum(UserRole::class)]])['role']);
+
+        if ($user->isAdmin() && $role !== UserRole::Admin && User::query()->where('role', UserRole::Admin)->count() === 1) {
             return back()->withErrors(['user' => 'Il doit rester au moins un administrateur.']);
         }
 
-        $user->forceFill(['is_admin' => ! $user->is_admin])->save();
+        $user->forceFill(['role' => $role])->save();
 
-        return back()->with('status', $user->is_admin
-            ? "{$user->name} est maintenant administrateur."
-            : "{$user->name} n'est plus administrateur.");
+        return back()->with('status', "{$user->name} : rôle « {$role->label()} ».");
     }
 
     /**
