@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@hasSection('title')@yield('title') · @endif{{ config('app.name') }}</title>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -13,7 +14,10 @@
 <body class="min-h-screen bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
     <header x-data="{ open: false }" class="border-b-2 border-accent-600 bg-white dark:bg-zinc-900">
         <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-y-2 px-4 py-3">
-            <a href="{{ route('home') }}" class="font-display text-lg font-semibold tracking-wider uppercase">{{ config('app.name') }}</a>
+            <a href="{{ route('home') }}" class="flex items-center gap-2 font-display text-lg font-semibold tracking-wider uppercase">
+                <img src="{{ asset('favicon.svg') }}" alt="" class="size-7">
+                {{ config('app.name') }}
+            </a>
 
             @auth
                 {{-- Bouton menu mobile --}}
