@@ -139,6 +139,11 @@ Organisation sur l'hébergement (identifiant FTP **principal**, dont le dossier 
    (masque de fichiers : `| .env; storage/`, la barre verticale introduisant les exclusions) :
    - `deploy/dist/w40k-app/` ↔ `/home/<login>/w40k-app/`
    - `deploy/dist/krishnak/` ↔ `/home/<login>/krishnak/`
+
+   La fin du build indique si `vendor/` (95 % des fichiers) a changé depuis le paquet précédent. S'il est
+   **inchangé**, l'exclure aussi (masque `| .env; storage/; vendor/`) : l'envoi passe de quelques minutes à
+   quelques secondes. Ne pas sauter l'envoi d'un paquet annoncé « vendor/ MODIFIÉ » : le build suivant le
+   comparerait à ce paquet et dirait « inchangé ».
 4. S'il y a des migrations : ouvrir le **lien de secours** `https://krishnak.fr/w40k/maintenance/<MAINTENANCE_TOKEN>`
    et cliquer *Appliquer les migrations*. Ce lien fonctionne même quand le nouveau code plante en attendant
    ses migrations (colonne des comptes manquante, par exemple) ; la Maintenance de l'Administration peut aussi
@@ -442,6 +447,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 - [x] Procédure pas à pas dans le README (§ 2, « Mise en ligne ») : première installation, mise à jour du code,
   mise à jour des points, dépannage
 - [x] Mise en ligne le 29/10/2026 : https://krishnak.fr/w40k (version ed532cc)
+- [x] Mises à jour sans renvoyer `vendor/` quand les dépendances n'ont pas changé (indiqué par le build)
 
 ### Audit et performances
 - [x] Premier audit (performance, maintenabilité) avec mesure des pages : taille et nombre de requêtes
@@ -537,6 +543,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-30 | Le traducteur modifie aussi le référentiel (unités, points, détachements), pas seulement les traductions | Choix de l'utilisateur : « toute l'app sauf l'admin ». Une modification de points en ligne peut être écrasée par la mise à jour suivante du référentiel. |
 | 2026-10-30 | Inscription libre sur une page publique, compte en attente jusqu'à validation par un admin (`approved_at`) ; invitations conservées (validées d'office) | Un seul lien à partager ; la validation filtre les inconnus et les robots, sans serveur mail. |
 | 2026-10-30 | Lien de secours des migrations par jeton secret (`MAINTENANCE_TOKEN`), sans connexion ni session | Une migration de la table des comptes a rendu inaccessible la page Maintenance qui devait l'appliquer (contournée par SQL dans phpMyAdmin). |
+| 2026-10-31 | `app/` et `database/` exclus du classmap Composer ; le build compare l'empreinte de `vendor/` à celle du paquet précédent | `vendor/` (6 400 fichiers) ne change plus qu'avec les dépendances et peut être exclu de l'envoi FTP ; les classes de l'application se chargent en PSR-4 (coût négligeable avec OPcache). |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

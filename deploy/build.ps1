@@ -37,6 +37,18 @@ function Invoke-Native([string] $description, [scriptblock] $command) {
     }
 }
 
+# Empreinte du contenu d'un dossier (chemins et contenus). installed.php/json en sont exclus : Composer y inscrit
+# le commit courant, sans effet sur le chargement des classes.
+function Get-DirectoryFingerprint([string] $directory) {
+    $prefix = (Resolve-Path $directory).Path.Length
+    $lines = Get-ChildItem $directory -Recurse -File |
+        Where-Object { $_.Name -notin @('installed.php', 'installed.json') } |
+        Sort-Object FullName |
+        ForEach-Object { $_.FullName.Substring($prefix) + ' ' + (Get-FileHash $_.FullName -Algorithm SHA256).Hash }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    return [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($lines -join "`n"))).Replace('-', '')
+}
+
 foreach ($tool in @($Php, $Composer)) {
     if (-not (Test-Path $tool)) {
         throw "Introuvable : $tool. Indiquer le bon chemin avec -Php ou -Composer."
@@ -59,6 +71,9 @@ try {
     # Le .env de production éventuellement rangé dans dist/w40k-app/ est conservé d'une construction à l'autre.
     $envFile = Join-Path $Destination 'w40k-app\.env'
     $savedEnv = if (Test-Path $envFile) { [IO.File]::ReadAllBytes($envFile) } else { $null }
+    # Empreinte du vendor/ du paquet précédent, pour savoir s'il faut le renvoyer.
+    $vendorFingerprintFile = Join-Path $Destination 'vendor.sha256'
+    $previousVendor = if (Test-Path $vendorFingerprintFile) { (Get-Content $vendorFingerprintFile -Raw).Trim() } else { $null }
     if (Test-Path $Destination) {
         Remove-Item $Destination -Recurse -Force
     }
@@ -97,6 +112,9 @@ try {
     } finally {
         Pop-Location
     }
+    # app/ et database/ étant exclus du classmap (composer.json), vendor/ ne change qu'avec les dépendances.
+    $vendor = Get-DirectoryFingerprint (Join-Path $app 'vendor')
+    Set-Content -Path $vendorFingerprintFile -Value $vendor -Encoding ascii -NoNewline
 
     Step 'Compilation des assets (npm run build)'
     Invoke-Native 'npm run build' { npm run build }
@@ -126,6 +144,14 @@ try {
     Write-Host 'À envoyer par FTP à la racine de l''hébergement (à côté de www/) :'
     Write-Host '  dist/w40k-app/  ->  /home/<login>/w40k-app/   (garder le .env et storage/ déjà en ligne)'
     Write-Host '  dist/krishnak/  ->  /home/<login>/krishnak/'
+    Write-Host ''
+    if ($previousVendor -eq $vendor) {
+        Write-Host 'vendor/ inchangé depuis le paquet précédent : masque WinSCP  | .env; storage/; vendor/' -ForegroundColor Green
+    } elseif ($previousVendor) {
+        Write-Host 'vendor/ MODIFIÉ depuis le paquet précédent : masque WinSCP  | .env; storage/  (vendor/ à renvoyer)' -ForegroundColor Yellow
+    } else {
+        Write-Host 'Pas de paquet précédent pour comparer vendor/ : masque WinSCP  | .env; storage/  (vendor/ à renvoyer)' -ForegroundColor Yellow
+    }
 } finally {
     Pop-Location
 }
