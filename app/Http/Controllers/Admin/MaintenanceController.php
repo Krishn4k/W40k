@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\Maintenance;
 use App\Support\ReferenceSqlExport;
-use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -21,7 +20,7 @@ class MaintenanceController extends Controller
     public function index(): View
     {
         return view('admin.maintenance.index', [
-            'pendingMigrations' => $this->pendingMigrations(app('migrator')),
+            'pendingMigrations' => Maintenance::pendingMigrations(),
             'version' => is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : 'développement',
             'configCached' => app()->configurationIsCached(),
             'routesCached' => app()->routesAreCached(),
@@ -54,7 +53,7 @@ class MaintenanceController extends Controller
     public function downloadReference(Request $request): Response
     {
         $sql = (new ReferenceSqlExport(''))->toSql();
-        $this->log("téléchargement du référentiel par {$request->user()->email}");
+        Maintenance::log("téléchargement du référentiel par {$request->user()->email}");
 
         return response(gzencode($sql, 9), 200, [
             'Content-Type' => 'application/gzip',
@@ -74,7 +73,7 @@ class MaintenanceController extends Controller
         foreach ($commands as $command => $options) {
             $exitCode = Artisan::call($command, $options);
             $outputs[] = trim(Artisan::output());
-            $this->log("{$command} par {$request->user()->email} (code {$exitCode})", ['output' => end($outputs)]);
+            Maintenance::log("{$command} par {$request->user()->email} (code {$exitCode})", ['output' => end($outputs)]);
 
             if ($exitCode !== 0) {
                 $status = "« {$command} » a échoué (code {$exitCode}).";
@@ -85,29 +84,5 @@ class MaintenanceController extends Controller
         return redirect()->route('admin.maintenance.index')
             ->with('status', $status)
             ->with('maintenance_output', implode("\n", array_filter($outputs)));
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    private function log(string $message, array $context = []): void
-    {
-        Log::build(['driver' => 'single', 'path' => storage_path('logs/maintenance.log')])->info($message, $context);
-    }
-
-    /**
-     * Names of the migration files not run yet.
-     *
-     * @return list<string>
-     */
-    private function pendingMigrations(Migrator $migrator): array
-    {
-        if (! $migrator->repositoryExists()) {
-            return [];
-        }
-
-        $files = $migrator->getMigrationFiles([database_path('migrations'), ...$migrator->paths()]);
-
-        return array_values(array_diff(array_keys($files), $migrator->getRepository()->getRan()));
     }
 }

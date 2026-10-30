@@ -13,13 +13,27 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CollectionLotController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DetachmentController;
+use App\Http\Controllers\EmergencyMaintenanceController;
 use App\Http\Controllers\FactionController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\LotPhotoController;
 use App\Http\Controllers\PointSetController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UnitController;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+// Emergency migrations link (secret token of MAINTENANCE_TOKEN): no session, so it works while the tables change.
+Route::prefix('maintenance/{token}')
+    ->name('maintenance.emergency.')
+    ->middleware('throttle:5,1')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
+    ->group(function () {
+        Route::get('/', [EmergencyMaintenanceController::class, 'show'])->name('show');
+        Route::post('/', [EmergencyMaintenanceController::class, 'migrate'])->name('migrate');
+    });
 
 Route::middleware('guest')->group(function () {
     Route::get('connexion', [SessionController::class, 'create'])->name('login');

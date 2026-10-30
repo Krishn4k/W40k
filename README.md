@@ -139,8 +139,15 @@ Organisation sur l'hébergement (identifiant FTP **principal**, dont le dossier 
    (masque de fichiers : `| .env; storage/`, la barre verticale introduisant les exclusions) :
    - `deploy/dist/w40k-app/` ↔ `/home/<login>/w40k-app/`
    - `deploy/dist/krishnak/` ↔ `/home/<login>/krishnak/`
-4. **Administration → Maintenance** : *Appliquer les migrations* s'il y en a, puis **Optimiser**. La version
-   affichée doit correspondre au commit envoyé.
+4. S'il y a des migrations : ouvrir le **lien de secours** `https://krishnak.fr/w40k/maintenance/<MAINTENANCE_TOKEN>`
+   et cliquer *Appliquer les migrations*. Ce lien fonctionne même quand le nouveau code plante en attendant
+   ses migrations (colonne des comptes manquante, par exemple) ; la Maintenance de l'Administration peut aussi
+   servir quand l'application s'affiche normalement.
+5. **Administration → Maintenance** : **Optimiser**. La version affichée doit correspondre au commit envoyé.
+
+Mise en place du lien de secours (une fois) : générer un secret avec `php -r "echo bin2hex(random_bytes(24));"`,
+l'ajouter au `.env` du serveur (`MAINTENANCE_TOKEN=…`) et à sa copie de sauvegarde, puis **Optimiser** pour que
+la configuration en cache le prenne en compte. Ne jamais partager ce lien.
 
 #### Mettre à jour les points (BSData / Munitorum Field Manual)
 
@@ -528,6 +535,7 @@ une liste modifiée ou supprimée plus tard ne change pas l'historique.
 | 2026-10-30 | Champ `role` (enum joueur / traducteur / administrateur) à la place de `is_admin`, migré automatiquement | Un troisième niveau sans combinaisons absurdes de cases ; un futur rôle s'ajoute sans migration de structure. |
 | 2026-10-30 | Le traducteur modifie aussi le référentiel (unités, points, détachements), pas seulement les traductions | Choix de l'utilisateur : « toute l'app sauf l'admin ». Une modification de points en ligne peut être écrasée par la mise à jour suivante du référentiel. |
 | 2026-10-30 | Inscription libre sur une page publique, compte en attente jusqu'à validation par un admin (`approved_at`) ; invitations conservées (validées d'office) | Un seul lien à partager ; la validation filtre les inconnus et les robots, sans serveur mail. |
+| 2026-10-30 | Lien de secours des migrations par jeton secret (`MAINTENANCE_TOKEN`), sans connexion ni session | Une migration de la table des comptes a rendu inaccessible la page Maintenance qui devait l'appliquer (contournée par SQL dans phpMyAdmin). |
 | 2026-10-17 | URLs en français (`/connexion`, `/collection`…), noms de routes en anglais | Interface FR ; noms de routes stables pour le code. |
 
 ## 7. Problèmes connus et points en attente

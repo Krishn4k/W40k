@@ -99,6 +99,13 @@ return [
 
     'key' => env('APP_KEY'),
 
+    /*
+    | Secret of the emergency migrations link (/maintenance/{token}), at least 32 characters; the link does
+    | not exist without it. Production only, never committed: php -r "echo bin2hex(random_bytes(24));"
+    */
+
+    'maintenance_token' => env('MAINTENANCE_TOKEN'),
+
     'previous_keys' => [
         ...array_filter(
             explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
