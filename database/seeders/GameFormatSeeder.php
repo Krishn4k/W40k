@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CompositionRuleType;
 use App\Models\GameFormat;
 use Illuminate\Database\Seeder;
 
@@ -43,7 +44,7 @@ class GameFormatSeeder extends Seeder
     {
         return array_values(array_filter([
             [
-                'rule_type' => 'max_points',
+                'rule_type' => CompositionRuleType::MaxPoints->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'The army exceeds the points limit of the format.',
@@ -51,7 +52,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'requires_detachment',
+                'rule_type' => CompositionRuleType::RequiresDetachment->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'The army must select at least one detachment.',
@@ -59,7 +60,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             $detachmentPoints === null ? null : [
-                'rule_type' => 'max_detachment_points',
+                'rule_type' => CompositionRuleType::MaxDetachmentPoints->value,
                 'parameters' => $detachmentPoints,
                 'message' => [
                     'en' => 'The detachments exceed the Detachment Points (DP) of the format.',
@@ -67,7 +68,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'force_disposition_from_detachments',
+                'rule_type' => CompositionRuleType::ForceDispositionFromDetachments->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'The force disposition must be granted by one of the selected detachments.',
@@ -75,7 +76,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'unique_detachment_tags',
+                'rule_type' => CompositionRuleType::UniqueDetachmentTags->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'You cannot select more than one detachment with the same Unique tag.',
@@ -83,7 +84,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'max_unit_copies',
+                'rule_type' => CompositionRuleType::MaxUnitCopies->value,
                 'parameters' => ['default' => $unitLimit, 'battleline' => $unitLimit * 2, 'dedicated_transport' => $unitLimit * 2, 'epic_hero' => 1],
                 'message' => [
                     'en' => 'Too many units with the same datasheet name.',
@@ -91,7 +92,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'max_enhancements',
+                'rule_type' => CompositionRuleType::MaxEnhancements->value,
                 'parameters' => ['max' => $enhancementLimit],
                 'message' => [
                     'en' => "An army can include at most {$enhancementLimit} enhancements.",
@@ -99,7 +100,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'enhancement_from_detachments',
+                'rule_type' => CompositionRuleType::EnhancementFromDetachments->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'Enhancements must come from the selected detachments.',
@@ -107,7 +108,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'unique_enhancements',
+                'rule_type' => CompositionRuleType::UniqueEnhancements->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'Each enhancement (except Upgrades) can only be taken once.',
@@ -115,7 +116,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'max_upgrade_copies',
+                'rule_type' => CompositionRuleType::MaxUpgradeCopies->value,
                 'parameters' => ['max' => 3],
                 'message' => [
                     'en' => 'An army can include up to three of the same Upgrade.',
@@ -123,7 +124,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'enhancement_requires_character',
+                'rule_type' => CompositionRuleType::EnhancementRequiresCharacter->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'Enhancements can only be given to Characters (any unit for Upgrades) that are not Epic Heroes.',
@@ -131,7 +132,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'one_enhancement_per_attached_unit',
+                'rule_type' => CompositionRuleType::OneEnhancementPerAttachedUnit->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'No unit, including attached units, can have more than one enhancement.',
@@ -139,7 +140,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'support_must_be_attached',
+                'rule_type' => CompositionRuleType::SupportMustBeAttached->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'Each Support unit must be attached to a bodyguard unit.',
@@ -147,7 +148,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'valid_attachment',
+                'rule_type' => CompositionRuleType::ValidAttachment->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'Leader and Support units must join a unit they can lead, with at most one Leader and one Support unit per bodyguard unit.',
@@ -155,7 +156,7 @@ class GameFormatSeeder extends Seeder
                 ],
             ],
             [
-                'rule_type' => 'requires_warlord',
+                'rule_type' => CompositionRuleType::RequiresWarlord->value,
                 'parameters' => null,
                 'message' => [
                     'en' => 'The army must have exactly one Warlord, who must be a Character.',

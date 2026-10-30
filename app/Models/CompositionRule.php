@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CompositionRuleType;
 use App\Support\LocalizedText;
 use Database\Factories\CompositionRuleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,5 +38,13 @@ class CompositionRule extends Model
     public function scope(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * The rule's type, or null for a type this version does not know.
+     */
+    public function type(): ?CompositionRuleType
+    {
+        return CompositionRuleType::tryFrom($this->rule_type);
     }
 }

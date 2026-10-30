@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CompositionRuleType;
 use App\Enums\ForceDisposition;
 use App\Enums\UnitRole;
 use App\Http\Requests\ArmyListRequest;
@@ -187,7 +188,7 @@ class ArmyListController extends Controller
             'selectedDetachmentIds' => array_map('intval', (array) old('detachment_ids', $armyList->exists ? $armyList->detachments->modelKeys() : [])),
             'gameFormats' => $gameFormats = GameFormat::query()->with('compositionRules')->orderBy('points_limit')->get(),
             'detachmentPointLimits' => $gameFormats->mapWithKeys(fn (GameFormat $format): array => [
-                $format->id => $format->compositionRules->firstWhere('rule_type', 'max_detachment_points')?->parameters,
+                $format->id => $format->compositionRules->firstWhere('rule_type', CompositionRuleType::MaxDetachmentPoints->value)?->parameters,
             ])->all(),
             'pointSets' => PointSet::query()->latest('valid_from')->get(),
             'currentPointSet' => PointSet::current(),

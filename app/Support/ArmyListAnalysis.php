@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\CompositionRuleType;
 use App\Enums\PaintStatus;
 use App\Enums\UnitRole;
 use App\Models\ArmyList;
@@ -128,7 +129,7 @@ final class ArmyListAnalysis
     public function detachmentPointsLimit(): ?int
     {
         $parameters = $this->referenceData->rulesFor($this->armyList)
-            ->first(fn (CompositionRule $rule): bool => $rule->scope_type === 'game_format' && $rule->rule_type === 'max_detachment_points')
+            ->first(fn (CompositionRule $rule): bool => $rule->scope_type === 'game_format' && $rule->type() === CompositionRuleType::MaxDetachmentPoints)
             ?->parameters;
 
         return isset($parameters['max']) ? (int) $parameters['max'] : null;
@@ -154,7 +155,7 @@ final class ArmyListAnalysis
         $entriesWithoutCost = $this->armyList->entries->filter(fn (ArmyListEntry $entry): bool => $this->unitPoints($entry) === null);
         if ($entriesWithoutCost->isNotEmpty()) {
             $violations[] = [
-                'rule_type' => 'missing_cost',
+                'rule_type' => CompositionRuleType::MissingCost->value,
                 'message' => 'Certaines unités n\'ont pas de coût pour cette taille d\'escouade'.($this->pointSet ? " dans « {$this->pointSet->name} »." : ' : aucune version de points en vigueur.'),
                 'details' => $entriesWithoutCost->map(fn (ArmyListEntry $entry): string => "{$entry->unit->name} ×{$entry->model_count}")->values()->all(),
             ];
@@ -234,80 +235,188 @@ final class ArmyListAnalysis
      */
     private function check(CompositionRule $rule): ?array
     {
-        $entries = $this->armyList->entries;
         $parameters = $rule->parameters ?? [];
-        $withEnhancement = $entries->whereNotNull('enhancement_id');
 
-        $details = match ($rule->rule_type) {
-            'max_points' => $this->totalPoints() > $this->pointsLimit()
-                ? ["{$this->totalPoints()} / {$this->pointsLimit()} pts"]
-                : [],
-            'max_unit_copies' => $entries->groupBy('unit_id')
-                ->map(function (Collection $copies) use ($parameters): ?string {
-                    $unit = $copies->first()->unit;
-                    $max = $this->maxCopies($unit->is_epic_hero, $unit->role, $parameters);
-
-                    return $copies->count() > $max ? "{$unit->name} : {$copies->count()} / {$max}" : null;
-                })
-                ->filter()
-                ->values()
-                ->all(),
-            'max_enhancements' => ($count = $this->enhancementCount()) > ($parameters['max'] ?? 3)
-                ? ["{$count} / ".($parameters['max'] ?? 3)]
-                : [],
-            'unique_enhancements' => $withEnhancement
-                ->reject(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)
-                ->groupBy('enhancement_id')
-                ->filter(fn (Collection $holders): bool => $holders->count() > 1)
-                ->map(fn (Collection $holders): string => (string) $holders->first()->enhancement->name)
-                ->values()
-                ->all(),
-            'max_upgrade_copies' => $withEnhancement
-                ->filter(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)
-                ->groupBy('enhancement_id')
-                ->filter(fn (Collection $holders): bool => $holders->count() > ($parameters['max'] ?? 3))
-                ->map(fn (Collection $holders): string => "{$holders->first()->enhancement->name} : {$holders->count()} / ".($parameters['max'] ?? 3))
-                ->values()
-                ->all(),
-            'enhancement_requires_character' => $withEnhancement
-                ->reject(fn (ArmyListEntry $entry): bool => ! $entry->unit->is_epic_hero && ($entry->unit->role === UnitRole::Character || $entry->enhancement->is_upgrade))
-                ->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)
-                ->values()
-                ->all(),
-            'enhancement_from_detachments' => $withEnhancement
-                ->reject(fn (ArmyListEntry $entry): bool => in_array($entry->enhancement->detachment_id, $this->armyList->detachments->modelKeys(), true))
-                ->map(fn (ArmyListEntry $entry): string => "{$entry->unit->name} : {$entry->enhancement->name}")
-                ->values()
-                ->all(),
-            'requires_detachment' => $this->armyList->detachments->isEmpty() ? ['Aucun détachement choisi.'] : [],
-            'force_disposition_from_detachments' => $this->armyList->force_disposition !== null
-                && ! in_array($this->armyList->force_disposition, $this->armyList->availableForceDispositions(), true)
-                ? [$this->armyList->force_disposition->label().' ('.$this->armyList->force_disposition->englishName().')']
-                : [],
-            'max_detachment_points' => $this->detachmentPointsProblems($parameters),
-            'unique_detachment_tags' => $this->armyList->detachments
-                ->whereNotNull('unique_tag')
-                ->groupBy('unique_tag')
-                ->filter(fn (Collection $detachments): bool => $detachments->count() > 1)
-                ->map(fn (Collection $detachments, string $tag): string => "{$tag} : ".$detachments->map(fn (Detachment $detachment): string => (string) $detachment->name)->join(', '))
-                ->values()
-                ->all(),
-            'support_must_be_attached' => $entries
-                ->filter(fn (ArmyListEntry $entry): bool => $entry->attached_to_entry_id === null && $this->isSupportUnit($entry->unit_id))
-                ->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)
-                ->values()
-                ->all(),
-            'valid_attachment' => $this->attachmentProblems(),
-            'one_enhancement_per_attached_unit' => $this->attachedUnits()
-                ->filter(fn (Collection $members): bool => $members->whereNotNull('enhancement_id')->count() > 1)
-                ->map(fn (Collection $members): string => $members->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)->join(' + '))
-                ->values()
-                ->all(),
-            'requires_warlord' => $this->warlordProblems(),
-            default => [],
+        $details = match ($rule->type()) {
+            CompositionRuleType::MaxPoints => $this->pointsProblems(),
+            CompositionRuleType::RequiresDetachment => $this->armyList->detachments->isEmpty() ? ['Aucun détachement choisi.'] : [],
+            CompositionRuleType::MaxDetachmentPoints => $this->detachmentPointsProblems($parameters),
+            CompositionRuleType::ForceDispositionFromDetachments => $this->forceDispositionProblems(),
+            CompositionRuleType::UniqueDetachmentTags => $this->duplicateDetachmentTags(),
+            CompositionRuleType::MaxUnitCopies => $this->unitCopiesProblems($parameters),
+            CompositionRuleType::MaxEnhancements => $this->enhancementCountProblems($parameters),
+            CompositionRuleType::EnhancementFromDetachments => $this->enhancementsFromOtherDetachments(),
+            CompositionRuleType::UniqueEnhancements => $this->duplicateEnhancements(),
+            CompositionRuleType::MaxUpgradeCopies => $this->upgradeCopiesProblems($parameters),
+            CompositionRuleType::EnhancementRequiresCharacter => $this->enhancementsOnInvalidBearers(),
+            CompositionRuleType::OneEnhancementPerAttachedUnit => $this->attachedUnitsWithSeveralEnhancements(),
+            CompositionRuleType::SupportMustBeAttached => $this->unattachedSupportUnits(),
+            CompositionRuleType::ValidAttachment => $this->attachmentProblems(),
+            CompositionRuleType::RequiresWarlord => $this->warlordProblems(),
+            CompositionRuleType::MissingCost, null => [],
         };
 
         return $details === [] ? null : $details;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function pointsProblems(): array
+    {
+        return $this->totalPoints() > $this->pointsLimit() ? ["{$this->totalPoints()} / {$this->pointsLimit()} pts"] : [];
+    }
+
+    /**
+     * The chosen Force Disposition when none of the selected detachments offers it.
+     *
+     * @return list<string>
+     */
+    private function forceDispositionProblems(): array
+    {
+        $disposition = $this->armyList->force_disposition;
+
+        return $disposition !== null && ! in_array($disposition, $this->armyList->availableForceDispositions(), true)
+            ? [$disposition->label().' ('.$disposition->englishName().')']
+            : [];
+    }
+
+    /**
+     * Detachments sharing a tag that only one detachment of the army may have.
+     *
+     * @return list<string>
+     */
+    private function duplicateDetachmentTags(): array
+    {
+        return $this->armyList->detachments
+            ->whereNotNull('unique_tag')
+            ->groupBy('unique_tag')
+            ->filter(fn (Collection $detachments): bool => $detachments->count() > 1)
+            ->map(fn (Collection $detachments, string $tag): string => "{$tag} : ".$detachments->map(fn (Detachment $detachment): string => (string) $detachment->name)->join(', '))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, int>  $parameters
+     * @return list<string>
+     */
+    private function unitCopiesProblems(array $parameters): array
+    {
+        return $this->armyList->entries->groupBy('unit_id')
+            ->map(function (Collection $copies) use ($parameters): ?string {
+                $unit = $copies->first()->unit;
+                $max = $this->maxCopies($unit->is_epic_hero, $unit->role, $parameters);
+
+                return $copies->count() > $max ? "{$unit->name} : {$copies->count()} / {$max}" : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, int>  $parameters
+     * @return list<string>
+     */
+    private function enhancementCountProblems(array $parameters): array
+    {
+        $max = $parameters['max'] ?? 3;
+
+        return ($count = $this->enhancementCount()) > $max ? ["{$count} / {$max}"] : [];
+    }
+
+    /**
+     * Enhancements taken from a detachment the list does not use.
+     *
+     * @return list<string>
+     */
+    private function enhancementsFromOtherDetachments(): array
+    {
+        return $this->entriesWithEnhancement()
+            ->reject(fn (ArmyListEntry $entry): bool => in_array($entry->enhancement->detachment_id, $this->armyList->detachments->modelKeys(), true))
+            ->map(fn (ArmyListEntry $entry): string => "{$entry->unit->name} : {$entry->enhancement->name}")
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Enhancements (other than Upgrades) taken more than once.
+     *
+     * @return list<string>
+     */
+    private function duplicateEnhancements(): array
+    {
+        return $this->entriesWithEnhancement()
+            ->reject(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)
+            ->groupBy('enhancement_id')
+            ->filter(fn (Collection $holders): bool => $holders->count() > 1)
+            ->map(fn (Collection $holders): string => (string) $holders->first()->enhancement->name)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, int>  $parameters
+     * @return list<string>
+     */
+    private function upgradeCopiesProblems(array $parameters): array
+    {
+        $max = $parameters['max'] ?? 3;
+
+        return $this->entriesWithEnhancement()
+            ->filter(fn (ArmyListEntry $entry): bool => $entry->enhancement->is_upgrade)
+            ->groupBy('enhancement_id')
+            ->filter(fn (Collection $holders): bool => $holders->count() > $max)
+            ->map(fn (Collection $holders): string => "{$holders->first()->enhancement->name} : {$holders->count()} / {$max}")
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Units carrying an enhancement they cannot take: Epic Heroes, and non-Characters unless it is an Upgrade.
+     *
+     * @return list<string>
+     */
+    private function enhancementsOnInvalidBearers(): array
+    {
+        return $this->entriesWithEnhancement()
+            ->reject(fn (ArmyListEntry $entry): bool => ! $entry->unit->is_epic_hero && ($entry->unit->role === UnitRole::Character || $entry->enhancement->is_upgrade))
+            ->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function attachedUnitsWithSeveralEnhancements(): array
+    {
+        return $this->attachedUnits()
+            ->filter(fn (Collection $members): bool => $members->whereNotNull('enhancement_id')->count() > 1)
+            ->map(fn (Collection $members): string => $members->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)->join(' + '))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function unattachedSupportUnits(): array
+    {
+        return $this->armyList->entries
+            ->filter(fn (ArmyListEntry $entry): bool => $entry->attached_to_entry_id === null && $this->isSupportUnit($entry->unit_id))
+            ->map(fn (ArmyListEntry $entry): string => (string) $entry->unit->name)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return Collection<int, ArmyListEntry>
+     */
+    private function entriesWithEnhancement(): Collection
+    {
+        return $this->armyList->entries->whereNotNull('enhancement_id');
     }
 
     /**

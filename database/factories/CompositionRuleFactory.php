@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CompositionRuleType;
 use App\Models\CompositionRule;
 use App\Models\GameFormat;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -21,7 +22,7 @@ class CompositionRuleFactory extends Factory
         return [
             'scope_type' => 'game_format',
             'scope_id' => GameFormat::factory(),
-            'rule_type' => 'max_points',
+            'rule_type' => CompositionRuleType::MaxPoints->value,
             'parameters' => null,
             'message' => null,
         ];
